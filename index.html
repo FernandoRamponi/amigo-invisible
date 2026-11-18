@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amigo Invisible</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Fondo: acá va a ir el Santa pixel bailando más adelante -->
+  <div id="fondo" aria-hidden="true"></div>
+
+  <main class="contenedor">
+    <h1>🎁 Amigo Invisible 🎁</h1>
+
+    <section class="tarjeta tarjeta-sorteo">
+      <label for="select-quien" class="etiqueta">¿Quién sos?</label>
+      <select id="select-quien" disabled>
+        <option value="">Cargando participantes...</option>
+      </select>
+
+      <div id="ruleta" class="ruleta">
+        <span id="nombre-actual">¿Quién te toca?</span>
+      </div>
+
+      <button id="btn-sortear" class="btn btn-principal" disabled>🎲 Sortear</button>
+      <p id="mensaje" class="mensaje"></p>
+    </section>
+
+    <p id="aviso-demo" class="aviso-demo oculto">
+      Modo prueba: todavía no está conectado el Apps Script (ver INSTRUCCIONES.md).
+    </p>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
