@@ -866,22 +866,21 @@ iniciar();
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.outputEncoding = THREE.sRGBEncoding;
 
   const escena = new THREE.Scene();
   const camara = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
   camara.position.set(0, 1.55, 5.2);
   camara.lookAt(0, 0.75, 0);
 
-  escena.add(new THREE.HemisphereLight(0xfff4e0, 0x203040, 0.75));
-  const sol = new THREE.DirectionalLight(0xffffff, 0.75);
+  escena.add(new THREE.HemisphereLight(0xfff4e0, 0x203040, 0.55));
+  const sol = new THREE.DirectionalLight(0xffffff, 0.6);
   sol.position.set(2, 4, 3);
   escena.add(sol);
 
   // Luces de boliche que giran alrededor
   const coloresDisco = [0xff3d7f, 0x3dd6ff, 0xffd23d, 0x7dff6a];
   const lucesDisco = coloresDisco.map(c => {
-    const l = new THREE.PointLight(c, 0.9, 6);
+    const l = new THREE.PointLight(c, 0.45, 5);
     escena.add(l);
     return l;
   });
@@ -1010,17 +1009,17 @@ iniciar();
   const cara = esfera(0.4, piel, 32);
   cara.position.y = 0.32;
   const barba = esfera(0.36, blanco, 28);
-  barba.scale.set(1.08, 0.95, 0.85);
-  barba.position.set(0, 0.14, 0.12);
+  barba.scale.set(1.05, 0.85, 0.8);
+  barba.position.set(0, -0.02, 0.1);
   const bigoteIzq = esfera(0.1, blanco, 16);
   bigoteIzq.scale.set(1.5, 0.75, 0.9);
-  bigoteIzq.position.set(-0.1, 0.27, 0.37);
+  bigoteIzq.position.set(-0.1, 0.25, 0.37);
   bigoteIzq.rotation.z = 0.35;
   const bigoteDer = bigoteIzq.clone();
   bigoteDer.position.x = 0.1;
   bigoteDer.rotation.z = -0.35;
   const nariz = esfera(0.065, mat(0xff9e86), 16);
-  nariz.position.set(0, 0.33, 0.41);
+  nariz.position.set(0, 0.31, 0.41);
   const mejillaIzq = esfera(0.07, rosa, 12);
   mejillaIzq.scale.set(1, 0.6, 0.4);
   mejillaIzq.position.set(-0.22, 0.32, 0.31);
