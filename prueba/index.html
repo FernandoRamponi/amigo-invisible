@@ -1039,11 +1039,12 @@ iniciar();
   }
   const ojoIzq = ojo(-0.13);
   const ojoDer = ojo(0.13);
-  const cejaIzq = new THREE.Mesh(new THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(0.02, 0.08, 4, 8) : new THREE.BoxGeometry(0.1, 0.03, 0.03), blanco);
-  cejaIzq.rotation.z = Math.PI / 2 - 0.25;
+  const cejaIzq = esfera(0.05, blanco, 12);
+  cejaIzq.scale.set(1.3, 0.45, 0.5);
+  cejaIzq.rotation.z = 0.25;
   cejaIzq.position.set(-0.13, 0.53, 0.34);
   const cejaDer = cejaIzq.clone();
-  cejaDer.rotation.z = Math.PI / 2 + 0.25;
+  cejaDer.rotation.z = -0.25;
   cejaDer.position.x = 0.13;
   cabeza.add(cara, barba, bigoteIzq, bigoteDer, nariz, mejillaIzq, mejillaDer, ojoIzq, ojoDer, cejaIzq, cejaDer);
 
