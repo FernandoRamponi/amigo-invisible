@@ -142,6 +142,8 @@ h1 {
   border-radius: 16px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 24px rgba(244, 197, 66, 0.25);
   animation: lista-abrir 0.22s ease-out;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dorado) transparent;
 }
 .selector-lista[hidden] { display: none; }
 @keyframes lista-abrir {
@@ -323,6 +325,19 @@ h1 {
 }
 .santa-svg { max-width: 60vw; height: auto; overflow: visible; }
 
+.santa-3d {
+  display: none;
+  width: 300px;
+  height: 300px;
+  max-width: 82vw;
+  max-height: 82vw;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.santa-baile.con-3d .santa-svg { display: none; }
+.santa-baile.con-3d .santa-3d { display: block; }
+.santa-baile.con-3d { margin-top: -12px; }
+
 .santa { transform-origin: 100px 230px; animation: santa-rebote 0.5s ease-in-out infinite alternate; }
 .sombra { fill: rgba(0, 0, 0, 0.35); transform-origin: 100px 248px; animation: sombra 0.5s ease-in-out infinite alternate; }
 .pierna-izq { transform-origin: 85px 165px; animation: pierna-izq 0.5s ease-in-out infinite alternate; }
@@ -440,8 +455,8 @@ h1 {
       <p id="mensaje" class="mensaje"></p>
     </section>
 
-    <!-- Santa bailando -->
-    <div class="santa-baile" aria-hidden="true">
+    <!-- Mini Santa bailando: 3D con santa3d.js; si no hay 3D, queda este dibujo plano -->
+    <div class="santa-baile" aria-hidden="true" title="¡Tocalo!">
       <span class="nota nota-1">♪</span>
       <span class="nota nota-2">♫</span>
       <span class="nota nota-3">♪</span>
@@ -822,6 +837,363 @@ async function iniciar() {
 
 btnSortear.addEventListener("click", sortear);
 iniciar();
+</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>// =====================================================
+// MINI SANTA 3D bailando (Three.js)
+// Un Santa petiso y cabezón que mueve la cadera, rebota y gira en círculos
+// sobre una pista de baile con luces de colores. Tocalo para que haga un giro.
+// Si el navegador no soporta 3D, queda el Santa plano (SVG) de respaldo.
+// =====================================================
+(function () {
+  const contenedor = document.querySelector(".santa-baile");
+  if (!contenedor || typeof THREE === "undefined") return;
+
+  // ¿Hay WebGL?
+  try {
+    const prueba = document.createElement("canvas");
+    if (!(prueba.getContext("webgl") || prueba.getContext("experimental-webgl"))) return;
+  } catch (e) { return; }
+
+  const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- Escena ----------
+  const canvas = document.createElement("canvas");
+  canvas.className = "santa-3d";
+  canvas.setAttribute("aria-hidden", "true");
+  contenedor.appendChild(canvas);
+  contenedor.classList.add("con-3d");
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  const escena = new THREE.Scene();
+  const camara = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
+  camara.position.set(0, 1.55, 5.2);
+  camara.lookAt(0, 0.75, 0);
+
+  escena.add(new THREE.HemisphereLight(0xfff4e0, 0x203040, 0.75));
+  const sol = new THREE.DirectionalLight(0xffffff, 0.75);
+  sol.position.set(2, 4, 3);
+  escena.add(sol);
+
+  // Luces de boliche que giran alrededor
+  const coloresDisco = [0xff3d7f, 0x3dd6ff, 0xffd23d, 0x7dff6a];
+  const lucesDisco = coloresDisco.map(c => {
+    const l = new THREE.PointLight(c, 0.9, 6);
+    escena.add(l);
+    return l;
+  });
+
+  // ---------- Materiales ----------
+  const mat = c => new THREE.MeshToonMaterial({ color: c });
+  const rojo = mat(0xe01b34);
+  const rojoOscuro = mat(0xa8102a);
+  const blanco = mat(0xffffff);
+  const piel = mat(0xffcfae);
+  const negro = mat(0x1e1e24);
+  const dorado = mat(0xffc93c);
+  const rosa = new THREE.MeshToonMaterial({ color: 0xff8a9a, transparent: true, opacity: 0.7 });
+  const verde = mat(0x1e9a55);
+
+  const esfera = (r, m, seg = 24) => new THREE.Mesh(new THREE.SphereGeometry(r, seg, Math.round(seg * 0.75)), m);
+
+  // ---------- Pista de baile ----------
+  const pista = new THREE.Mesh(
+    new THREE.CircleGeometry(1.35, 48),
+    new THREE.MeshBasicMaterial({ color: 0xff3d7f, transparent: true, opacity: 0.18 })
+  );
+  pista.rotation.x = -Math.PI / 2;
+  escena.add(pista);
+
+  const aro = new THREE.Mesh(
+    new THREE.RingGeometry(1.3, 1.38, 64),
+    new THREE.MeshBasicMaterial({ color: 0xffd23d, transparent: true, opacity: 0.55 })
+  );
+  aro.rotation.x = -Math.PI / 2;
+  aro.position.y = 0.002;
+  escena.add(aro);
+
+  // Sombra suave (textura dibujada en un canvas)
+  const sombraTex = (() => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    const g = c.getContext("2d");
+    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, "rgba(0,0,0,0.55)");
+    grad.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  const sombra = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.1, 1.1),
+    new THREE.MeshBasicMaterial({ map: sombraTex, transparent: true, depthWrite: false })
+  );
+  sombra.rotation.x = -Math.PI / 2;
+  sombra.position.y = 0.004;
+  escena.add(sombra);
+
+  // ---------- Mini Santa ----------
+  const santa = new THREE.Group();      // se mueve en círculo y gira
+  const rebote = new THREE.Group();     // salta al ritmo
+  santa.add(rebote);
+  escena.add(santa);
+
+  // Piernas (cortitas)
+  function pierna(lado) {
+    const g = new THREE.Group();
+    g.position.set(0.17 * lado, 0.36, 0);
+    const muslo = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.26, 16), rojoOscuro);
+    muslo.position.y = -0.13;
+    const bota = esfera(0.14, negro);
+    bota.scale.set(1, 0.65, 1.45);
+    bota.position.set(0, -0.28, 0.06);
+    g.add(muslo, bota);
+    rebote.add(g);
+    return g;
+  }
+  const piernaIzq = pierna(-1);
+  const piernaDer = pierna(1);
+
+  // Cadera: todo lo de arriba cuelga de acá (para el meneo)
+  const cadera = new THREE.Group();
+  cadera.position.y = 0.36;
+  rebote.add(cadera);
+
+  // Panza
+  const panza = esfera(0.42, rojo, 32);
+  panza.scale.set(1.05, 0.95, 1);
+  panza.position.y = 0.3;
+  const borde = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.075, 12, 40), blanco);
+  borde.rotation.x = Math.PI / 2;
+  borde.position.y = 0.04;
+  const cinturon = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.045, 10, 40), negro);
+  cinturon.rotation.x = Math.PI / 2;
+  cinturon.position.y = 0.24;
+  const hebilla = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.12, 0.05), dorado);
+  hebilla.position.set(0, 0.24, 0.45);
+  const botones = [0.4, 0.52].map(y => {
+    const b = esfera(0.035, blanco, 12);
+    b.position.set(0, y, 0.4 - (y - 0.4) * 0.6);
+    return b;
+  });
+  // Colita (para cuando da la espalda)
+  const pompon = esfera(0.09, blanco, 16);
+  pompon.position.set(0, 0.12, -0.38);
+  cadera.add(panza, borde, cinturon, hebilla, pompon, ...botones);
+
+  // Brazos
+  function brazo(lado) {
+    const hombro = new THREE.Group();
+    hombro.position.set(0.36 * lado, 0.47, 0);
+    const manga = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.3, 14), rojo);
+    manga.position.y = -0.15;
+    const puno = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.035, 8, 20), blanco);
+    puno.rotation.x = Math.PI / 2;
+    puno.position.y = -0.3;
+    const guante = esfera(0.1, verde, 16);
+    guante.position.y = -0.38;
+    hombro.add(manga, puno, guante);
+    cadera.add(hombro);
+    return hombro;
+  }
+  const brazoIzq = brazo(-1);
+  const brazoDer = brazo(1);
+
+  // Cabeza (bien grande, estilo chibi)
+  const cabeza = new THREE.Group();
+  cabeza.position.y = 0.72;
+  cadera.add(cabeza);
+
+  const cara = esfera(0.4, piel, 32);
+  cara.position.y = 0.32;
+  const barba = esfera(0.36, blanco, 28);
+  barba.scale.set(1.08, 0.95, 0.85);
+  barba.position.set(0, 0.14, 0.12);
+  const bigoteIzq = esfera(0.1, blanco, 16);
+  bigoteIzq.scale.set(1.5, 0.75, 0.9);
+  bigoteIzq.position.set(-0.1, 0.27, 0.37);
+  bigoteIzq.rotation.z = 0.35;
+  const bigoteDer = bigoteIzq.clone();
+  bigoteDer.position.x = 0.1;
+  bigoteDer.rotation.z = -0.35;
+  const nariz = esfera(0.065, mat(0xff9e86), 16);
+  nariz.position.set(0, 0.33, 0.41);
+  const mejillaIzq = esfera(0.07, rosa, 12);
+  mejillaIzq.scale.set(1, 0.6, 0.4);
+  mejillaIzq.position.set(-0.22, 0.32, 0.31);
+  const mejillaDer = mejillaIzq.clone();
+  mejillaDer.position.x = 0.22;
+
+  function ojo(x) {
+    const g = new THREE.Group();
+    g.position.set(x, 0.43, 0.35);
+    const o = esfera(0.055, negro, 16);
+    o.scale.set(0.85, 1.15, 0.6);
+    const brillo = esfera(0.018, blanco, 8);
+    brillo.position.set(0.018, 0.025, 0.03);
+    g.add(o, brillo);
+    return g;
+  }
+  const ojoIzq = ojo(-0.13);
+  const ojoDer = ojo(0.13);
+  const cejaIzq = new THREE.Mesh(new THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(0.02, 0.08, 4, 8) : new THREE.BoxGeometry(0.1, 0.03, 0.03), blanco);
+  cejaIzq.rotation.z = Math.PI / 2 - 0.25;
+  cejaIzq.position.set(-0.13, 0.53, 0.34);
+  const cejaDer = cejaIzq.clone();
+  cejaDer.rotation.z = Math.PI / 2 + 0.25;
+  cejaDer.position.x = 0.13;
+  cabeza.add(cara, barba, bigoteIzq, bigoteDer, nariz, mejillaIzq, mejillaDer, ojoIzq, ojoDer, cejaIzq, cejaDer);
+
+  // Gorro con punta que se bambolea
+  const gorro = new THREE.Group();
+  gorro.position.y = 0.55;
+  gorro.rotation.z = -0.12;
+  cabeza.add(gorro);
+  const banda = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.085, 12, 40), blanco);
+  banda.rotation.x = Math.PI / 2;
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.37, 0.25, 28), rojo);
+  base.position.y = 0.12;
+  const punta = new THREE.Group();
+  punta.position.y = 0.24;
+  const cono = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.45, 24), rojo);
+  cono.position.y = 0.2;
+  const bolita = esfera(0.085, blanco, 16);
+  bolita.position.y = 0.44;
+  punta.add(cono, bolita);
+  gorro.add(banda, base, punta);
+
+  // ---------- Tamaño ----------
+  function ajustar() {
+    const w = canvas.clientWidth || 260;
+    const h = canvas.clientHeight || 260;
+    renderer.setSize(w, h, false);
+    camara.aspect = w / h;
+    camara.updateProjectionMatrix();
+  }
+  ajustar();
+  window.addEventListener("resize", ajustar);
+
+  // ---------- Toque: giro con salto ----------
+  let giroExtra = 0;     // vueltas extra pendientes (en radianes)
+  let saltoHasta = 0;
+  contenedor.addEventListener("click", () => {
+    giroExtra += Math.PI * 2;
+    saltoHasta = reloj.getElapsedTime() + 0.6;
+  });
+
+  // ---------- Baile ----------
+  const reloj = new THREE.Clock();
+  const BPM = 116;
+  const PI2 = Math.PI * 2;
+  let anguloExtra = 0;
+
+  function bailar(t, dt) {
+    const b = (t * BPM) / 60;              // tiempo en "beats"
+    const fase = b * PI2;                  // una vuelta por beat
+    const parte = Math.floor(b / 8) % 3;   // cambia de paso cada 8 beats
+
+    // Camina en círculo por la pista
+    const ang = t * 0.9;
+    santa.position.set(Math.sin(ang) * 0.42, 0, Math.cos(ang) * 0.22);
+
+    // Gira sobre sí mismo (y mucho más si lo tocaste)
+    if (giroExtra > 0) {
+      const paso = Math.min(giroExtra, dt * 14);
+      giroExtra -= paso;
+      anguloExtra += paso;
+    }
+    const mirar = parte === 1 ? b * 0.9 : Math.sin(b * 0.5) * 0.9; // en la parte 1 da vueltas
+    santa.rotation.y = mirar + anguloExtra;
+
+    // Rebote con aplastado y estirado
+    const salto = Math.abs(Math.sin(fase / 2));
+    const saltoGrande = t < saltoHasta ? Math.sin(((saltoHasta - t) / 0.6) * Math.PI) * 0.45 : 0;
+    rebote.position.y = salto * 0.1 + saltoGrande;
+    rebote.scale.set(1 + (1 - salto) * 0.06, 1 - (1 - salto) * 0.08, 1 + (1 - salto) * 0.06);
+
+    // Meneo de cadera (el perreo navideño 🎅)
+    const meneo = Math.sin(fase * 2);
+    if (parte === 2) {
+      // de espaldas, colita para arriba y meneo rápido
+      cadera.rotation.x = 0.35 + meneo * 0.18;
+      cadera.rotation.z = Math.sin(fase) * 0.12;
+      santa.rotation.y = Math.PI + Math.sin(b * 0.5) * 0.4 + anguloExtra;
+    } else {
+      cadera.rotation.x = meneo * 0.12;
+      cadera.rotation.z = Math.sin(fase) * 0.22;
+    }
+    cadera.rotation.y = Math.sin(fase) * 0.25;
+
+    // La cabeza compensa y cabecea al ritmo
+    cabeza.rotation.z = -cadera.rotation.z * 1.3 + Math.sin(fase * 2) * 0.06;
+    cabeza.rotation.x = -cadera.rotation.x * 0.8 + Math.abs(Math.sin(fase)) * 0.12;
+
+    // Brazos: arriba "levantando el techo" o agitando a los costados
+    if (parte === 0) {
+      brazoIzq.rotation.z = -2.6 + Math.sin(fase) * 0.35;
+      brazoDer.rotation.z = 2.6 + Math.sin(fase) * 0.35;
+      brazoIzq.rotation.x = brazoDer.rotation.x = 0;
+    } else {
+      brazoIzq.rotation.z = -0.9 - Math.sin(fase * 2) * 0.5;
+      brazoDer.rotation.z = 0.9 - Math.sin(fase * 2) * 0.5;
+      brazoIzq.rotation.x = Math.sin(fase) * 0.6;
+      brazoDer.rotation.x = -Math.sin(fase) * 0.6;
+    }
+
+    // Pasitos
+    piernaIzq.rotation.x = Math.max(0, Math.sin(fase)) * -0.7;
+    piernaDer.rotation.x = Math.max(0, -Math.sin(fase)) * -0.7;
+    piernaIzq.rotation.z = -0.08 - salto * 0.06;
+    piernaDer.rotation.z = 0.08 + salto * 0.06;
+
+    // Punta del gorro, ojos que parpadean
+    punta.rotation.z = Math.sin(fase - 1) * 0.45 - 0.3;
+    punta.rotation.x = Math.cos(fase - 1) * 0.25;
+    const parpadeo = (t % 3.2) < 0.12 ? 0.15 : 1;
+    ojoIzq.scale.y = ojoDer.scale.y = parpadeo;
+
+    // Sombra y pista
+    sombra.position.x = santa.position.x;
+    sombra.position.z = santa.position.z;
+    const s = 1 - salto * 0.2 - saltoGrande * 0.6;
+    sombra.scale.set(s, s, s);
+    pista.material.color.setHSL((t * 0.08) % 1, 0.9, 0.55);
+    aro.rotation.z = t * 0.5;
+
+    // Luces de boliche orbitando
+    lucesDisco.forEach((l, i) => {
+      const a = t * 1.3 + (i * PI2) / lucesDisco.length;
+      l.position.set(Math.cos(a) * 2, 1.4 + Math.sin(t * 2 + i) * 0.4, Math.sin(a) * 2);
+    });
+  }
+
+  // ---------- Animación (solo cuando se ve) ----------
+  let visible = true;
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(entradas => { visible = entradas[0].isIntersecting; }).observe(contenedor);
+  }
+
+  let anterior = 0;
+  function cuadro() {
+    requestAnimationFrame(cuadro);
+    if (!visible || document.hidden) return;
+    const t = reloj.getElapsedTime();
+    const dt = Math.min(t - anterior, 0.05);
+    anterior = t;
+    bailar(t, dt);
+    renderer.render(escena, camara);
+  }
+
+  if (quieto) {
+    bailar(0.3, 0);
+    renderer.render(escena, camara);
+  } else {
+    cuadro();
+  }
+})();
 </script>
 </body>
 </html>
