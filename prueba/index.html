@@ -918,7 +918,7 @@ iniciar();
   const M = {
     saco: material(0xc8102e, 0.78),
     pantalon: material(0xa50d27, 0.8),
-    piel: material(0xffcfb0, 0.6),
+    piel: material(0xf9bb94, 0.6),
     nariz: material(0xf29a86, 0.45),
     pelo: material(0xfffaf2, 1),
     pelaje: material(0xfff6ea, 1),
@@ -1119,6 +1119,7 @@ iniciar();
     padre.add(seg);
     segmentos.push(seg);
     const siguiente = en(new THREE.Group(), 0, 0.15, 0);
+    siguiente.add(esfera(radios[i + 1], M.saco));   // tapa la unión para que el doblez quede liso
     seg.add(siguiente);
     padre = siguiente;
   }
