@@ -338,6 +338,29 @@ h1 {
 .santa-baile.con-3d .santa-3d { display: block; }
 .santa-baile.con-3d { margin-top: -12px; }
 
+/* Cartel con el nombre del baile */
+.santa-cartel {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(26, 15, 10, 0.85);
+  border: 2px solid var(--dorado);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 0 14px rgba(244, 197, 66, 0.35);
+}
+.santa-cartel.nuevo { animation: cartel-pop 0.45s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes cartel-pop {
+  from { transform: translateX(-50%) scale(0.4) rotate(-8deg); opacity: 0; }
+  to { transform: translateX(-50%) scale(1) rotate(0); opacity: 1; }
+}
+
 .santa { transform-origin: 100px 230px; animation: santa-rebote 0.5s ease-in-out infinite alternate; }
 .sombra { fill: rgba(0, 0, 0, 0.35); transform-origin: 100px 248px; animation: sombra 0.5s ease-in-out infinite alternate; }
 .pierna-izq { transform-origin: 85px 165px; animation: pierna-izq 0.5s ease-in-out infinite alternate; }
@@ -842,7 +865,8 @@ iniciar();
   <script>// =====================================================
 // MINI SANTA 3D bailando (Three.js)
 // Un Santa petiso y cabezón que mueve la cadera, rebota y gira en círculos
-// sobre una pista de baile con luces de colores. Tocalo para que haga un giro.
+// sobre una pista de baile con luces de colores, con bailes tipo meme.
+// Tocalo para que salte y cambie de baile.
 // Si el navegador no soporta 3D, queda el Santa plano (SVG) de respaldo.
 // =====================================================
 (function () {
@@ -1076,89 +1100,233 @@ iniciar();
   ajustar();
   window.addEventListener("resize", ajustar);
 
-  // ---------- Toque: giro con salto ----------
-  let giroExtra = 0;     // vueltas extra pendientes (en radianes)
+  // ---------- Bailes tipo meme ----------
+  // Cada baile devuelve una "pose" (ángulos de las articulaciones) para el momento b (en beats).
+  // El Santa pasa suave de una pose a la otra, así que los cambios de baile quedan fluidos.
+  const reloj = new THREE.Clock();
+  const BPM = 116;
+  const PI = Math.PI;
+  const PI2 = PI * 2;
+  const BEATS_POR_BAILE = 8;
+
+  const NEUTRO = {
+    camina: 1, rotY: 0, x: 0, y: 0,
+    cX: 0, cY: 0, cZ: 0,           // cadera
+    hX: 0, hY: 0, hZ: 0,           // cabeza
+    aIX: 0, aIY: 0, aIZ: -0.25,    // brazo izquierdo
+    aDX: 0, aDY: 0, aDZ: 0.25,     // brazo derecho
+    pIX: 0, pIZ: -0.08,            // pierna izquierda
+    pDX: 0, pDZ: 0.08,             // pierna derecha
+  };
+  const pose = cambios => Object.assign({}, NEUTRO, cambios);
+  const rebotar = (f, alto) => Math.abs(Math.sin(f / 2)) * alto;
+
+  const BAILES = [
+    {
+      nombre: "🍑 Perreo navideño",
+      pose(b, f) {
+        return pose({
+          camina: 0.3,
+          rotY: PI + Math.sin(b * 0.5) * 0.35,
+          y: rebotar(f, 0.05),
+          cX: 0.42 + Math.sin(f * 2) * 0.2,
+          cZ: Math.sin(f) * 0.15,
+          hX: -0.35, hY: Math.sin(b * 0.5) * 0.5,
+          aIX: -0.5, aIZ: -0.6, aDX: -0.5, aDZ: 0.6,
+          pIZ: -0.28, pDZ: 0.28,
+        });
+      },
+    },
+    {
+      nombre: "🦷 El floss",
+      pose(b, f) {
+        const s = Math.sin(f), c = Math.cos(f);
+        return pose({
+          camina: 0, x: -s * 0.14, y: rebotar(f * 2, 0.03),
+          cZ: -s * 0.18,
+          hZ: s * 0.12,
+          aIZ: s * 0.75, aDZ: s * 0.75,
+          aIX: c * 0.55, aDX: -c * 0.55,
+          pIZ: -0.12, pDZ: 0.12,
+        });
+      },
+    },
+    {
+      nombre: "😎 Dab",
+      pose(b) {
+        const lado = Math.floor(b / 2) % 2 === 0 ? 1 : -1;
+        const golpe = (b % 2) < 0.15 ? 0.08 : 0;
+        return pose({
+          camina: 0, y: golpe,
+          cZ: 0.1 * lado,
+          hX: 0.5, hY: -0.35 * lado, hZ: 0.35 * lado,
+          // un brazo tapa la cara, el otro estirado en diagonal
+          aIX: lado > 0 ? -1.35 : 0, aIZ: lado > 0 ? 0.95 : -2.25,
+          aDX: lado > 0 ? 0 : -1.35, aDZ: lado > 0 ? 2.25 : -0.95,
+          pIZ: -0.18, pDZ: 0.18,
+        });
+      },
+    },
+    {
+      nombre: "🐴 Caballito",
+      pose(b, f) {
+        const lazo = (b % 8) >= 4;
+        const g = Math.sin(f * 2);
+        return pose({
+          camina: 1, y: Math.abs(g) * 0.12,
+          cX: 0.1, cZ: Math.sin(f) * 0.08,
+          hX: Math.abs(g) * 0.15,
+          aIX: -1.3, aIZ: 0.45 + g * 0.08,
+          aDX: lazo ? Math.cos(f * 2) * 0.35 : -1.3,
+          aDZ: lazo ? 2.55 + Math.sin(f * 2) * 0.3 : -0.45 - g * 0.08,
+          pIX: g * 0.55, pDX: -g * 0.55,
+        });
+      },
+    },
+    {
+      nombre: "💦 Aspersor",
+      pose(b) {
+        const tic = Math.floor(b * 2) % 8;
+        const giro = tic < 6 ? -0.8 + tic * 0.32 : (tic === 6 ? 0.2 : -0.8);
+        return pose({
+          camina: 0, rotY: giro,
+          y: (b * 2) % 1 < 0.2 ? 0.05 : 0,
+          hX: -0.1,
+          aIX: 0.7, aIZ: -2.5,          // mano atrás de la cabeza
+          aDX: -1.5, aDZ: 0.1,          // brazo estirado adelante
+          pIX: -0.25, pDX: 0.15,
+        });
+      },
+    },
+    {
+      nombre: "🌀 Trompo",
+      pose(b, f) {
+        return pose({
+          camina: 0.5, rotY: b * PI * 1.5,
+          y: 0.05 + Math.sin(f) * 0.03,
+          cZ: 0.12,
+          hX: -0.15, hZ: -0.15,
+          aIZ: -1.55, aDZ: 1.55,
+          pDX: -0.55, pDZ: 0.45,
+        });
+      },
+    },
+    {
+      nombre: "🤖 Robot",
+      rapido: true,
+      pose(b) {
+        const paso = Math.floor(b * 2) % 4;
+        return pose([
+          { camina: 0, aIX: -1.57, aDX: -1.57, hY: 0.6 },
+          { camina: 0, aIZ: -1.57, cY: 0.35, hY: -0.6, pIX: -0.3 },
+          { camina: 0, aIZ: -1.57, aDZ: 1.57, hX: 0.3 },
+          { camina: 0, aDX: -1.57, cY: -0.35, hY: 0.3, pDX: -0.3 },
+        ][paso]);
+      },
+    },
+    {
+      nombre: "🪩 Fiebre disco",
+      pose(b, f) {
+        const arriba = Math.floor(b) % 2 === 0;
+        return pose({
+          camina: 0.5, x: Math.sin(f) * 0.08, y: rebotar(f, 0.05),
+          cZ: Math.sin(f) * 0.2,
+          hY: arriba ? -0.3 : 0.25, hX: arriba ? -0.25 : 0.2,
+          aIX: 0.35, aIZ: -0.75,                     // mano en la cintura
+          aDX: arriba ? 0 : -0.35, aDZ: arriba ? 2.6 : 0.55, // señala arriba y abajo
+          pDZ: arriba ? 0.3 : 0.1,
+        });
+      },
+    },
+  ];
+
+  // Orden aleatorio, sin repetir hasta pasar por todos
+  let orden = [];
+  function siguienteBaile() {
+    if (!orden.length) orden = BAILES.map((_, i) => i).sort(() => Math.random() - 0.5);
+    return orden.shift();
+  }
+
+  const cartel = document.createElement("div");
+  cartel.className = "santa-cartel";
+  contenedor.appendChild(cartel);
+
+  let baileActual = siguienteBaile();
+  let inicioBaile = 0;     // en beats
+  function mostrarCartel() {
+    cartel.textContent = BAILES[baileActual].nombre;
+    cartel.classList.remove("nuevo");
+    void cartel.offsetWidth;
+    cartel.classList.add("nuevo");
+  }
+  mostrarCartel();
+
+  let actual = Object.assign({}, NEUTRO);
+  let cambiarAhora = false;
   let saltoHasta = 0;
+
+  // Tocalo: salta y cambia de baile
   contenedor.addEventListener("click", () => {
-    giroExtra += Math.PI * 2;
+    cambiarAhora = true;
     saltoHasta = reloj.getElapsedTime() + 0.6;
   });
 
-  // ---------- Baile ----------
-  const reloj = new THREE.Clock();
-  const BPM = 116;
-  const PI2 = Math.PI * 2;
-  let anguloExtra = 0;
+  function cambiarBaile(b) {
+    baileActual = siguienteBaile();
+    inicioBaile = b;
+    // que no "desenrosque" todas las vueltas del trompo
+    actual.rotY = ((actual.rotY % PI2) + PI2) % PI2;
+    if (actual.rotY > PI) actual.rotY -= PI2;
+    mostrarCartel();
+  }
 
   function bailar(t, dt) {
-    const b = (t * BPM) / 60;              // tiempo en "beats"
-    const fase = b * PI2;                  // una vuelta por beat
-    const parte = Math.floor(b / 8) % 3;   // cambia de paso cada 8 beats
+    const b = (t * BPM) / 60;      // tiempo en beats
+    const f = b * PI2;             // una vuelta completa por beat
 
-    // Camina en círculo por la pista
+    if (cambiarAhora || b - inicioBaile >= BEATS_POR_BAILE) {
+      cambiarAhora = false;
+      cambiarBaile(b);
+    }
+
+    const baile = BAILES[baileActual];
+    const objetivo = baile.pose(b - inicioBaile, f);
+
+    // Pasar suave hacia la pose (el robot es más brusco a propósito)
+    const k = dt === 0 ? 1 : 1 - Math.exp(-dt * (baile.rapido ? 30 : 14));
+    for (const clave in objetivo) actual[clave] += (objetivo[clave] - actual[clave]) * k;
+    const p = actual;
+
+    // Recorrido en círculo por la pista
     const ang = t * 0.9;
-    santa.position.set(Math.sin(ang) * 0.42, 0, Math.cos(ang) * 0.22);
+    santa.position.set(Math.sin(ang) * 0.42 * p.camina + p.x, 0, Math.cos(ang) * 0.22 * p.camina);
+    santa.rotation.y = p.rotY + Math.sin(ang) * 0.3 * p.camina;
 
-    // Gira sobre sí mismo (y mucho más si lo tocaste)
-    if (giroExtra > 0) {
-      const paso = Math.min(giroExtra, dt * 14);
-      giroExtra -= paso;
-      anguloExtra += paso;
-    }
-    const mirar = parte === 1 ? b * 0.9 : Math.sin(b * 0.5) * 0.9; // en la parte 1 da vueltas
-    santa.rotation.y = mirar + anguloExtra;
+    // Salto (con aplastado y estirado) y salto grande al tocarlo
+    const saltoGrande = t < saltoHasta ? Math.sin(((saltoHasta - t) / 0.6) * PI) * 0.5 : 0;
+    const altura = p.y + saltoGrande;
+    rebote.position.y = altura;
+    const aplaste = Math.max(0, 0.06 - altura) * 1.2;
+    rebote.scale.set(1 + aplaste, 1 - aplaste * 1.3, 1 + aplaste);
+    rebote.rotation.y = saltoGrande > 0 ? (1 - (saltoHasta - t) / 0.6) * PI2 : 0;
 
-    // Rebote con aplastado y estirado
-    const salto = Math.abs(Math.sin(fase / 2));
-    const saltoGrande = t < saltoHasta ? Math.sin(((saltoHasta - t) / 0.6) * Math.PI) * 0.45 : 0;
-    rebote.position.y = salto * 0.1 + saltoGrande;
-    rebote.scale.set(1 + (1 - salto) * 0.06, 1 - (1 - salto) * 0.08, 1 + (1 - salto) * 0.06);
-
-    // Meneo de cadera (el perreo navideño 🎅)
-    const meneo = Math.sin(fase * 2);
-    if (parte === 2) {
-      // de espaldas, colita para arriba y meneo rápido
-      cadera.rotation.x = 0.35 + meneo * 0.18;
-      cadera.rotation.z = Math.sin(fase) * 0.12;
-      santa.rotation.y = Math.PI + Math.sin(b * 0.5) * 0.4 + anguloExtra;
-    } else {
-      cadera.rotation.x = meneo * 0.12;
-      cadera.rotation.z = Math.sin(fase) * 0.22;
-    }
-    cadera.rotation.y = Math.sin(fase) * 0.25;
-
-    // La cabeza compensa y cabecea al ritmo
-    cabeza.rotation.z = -cadera.rotation.z * 1.3 + Math.sin(fase * 2) * 0.06;
-    cabeza.rotation.x = -cadera.rotation.x * 0.8 + Math.abs(Math.sin(fase)) * 0.12;
-
-    // Brazos: arriba "levantando el techo" o agitando a los costados
-    if (parte === 0) {
-      brazoIzq.rotation.z = -2.6 + Math.sin(fase) * 0.35;
-      brazoDer.rotation.z = 2.6 + Math.sin(fase) * 0.35;
-      brazoIzq.rotation.x = brazoDer.rotation.x = 0;
-    } else {
-      brazoIzq.rotation.z = -0.9 - Math.sin(fase * 2) * 0.5;
-      brazoDer.rotation.z = 0.9 - Math.sin(fase * 2) * 0.5;
-      brazoIzq.rotation.x = Math.sin(fase) * 0.6;
-      brazoDer.rotation.x = -Math.sin(fase) * 0.6;
-    }
-
-    // Pasitos
-    piernaIzq.rotation.x = Math.max(0, Math.sin(fase)) * -0.7;
-    piernaDer.rotation.x = Math.max(0, -Math.sin(fase)) * -0.7;
-    piernaIzq.rotation.z = -0.08 - salto * 0.06;
-    piernaDer.rotation.z = 0.08 + salto * 0.06;
+    cadera.rotation.set(p.cX, p.cY, p.cZ);
+    cabeza.rotation.set(p.hX, p.hY, p.hZ);
+    brazoIzq.rotation.set(p.aIX, p.aIY, p.aIZ);
+    brazoDer.rotation.set(p.aDX, p.aDY, p.aDZ);
+    piernaIzq.rotation.set(p.pIX, 0, p.pIZ);
+    piernaDer.rotation.set(p.pDX, 0, p.pDZ);
 
     // Punta del gorro, ojos que parpadean
-    punta.rotation.z = Math.sin(fase - 1) * 0.45 - 0.3;
-    punta.rotation.x = Math.cos(fase - 1) * 0.25;
+    punta.rotation.z = Math.sin(f - 1) * 0.45 - 0.3 - p.cZ;
+    punta.rotation.x = Math.cos(f - 1) * 0.25;
     const parpadeo = (t % 3.2) < 0.12 ? 0.15 : 1;
     ojoIzq.scale.y = ojoDer.scale.y = parpadeo;
 
     // Sombra y pista
     sombra.position.x = santa.position.x;
     sombra.position.z = santa.position.z;
-    const s = 1 - salto * 0.2 - saltoGrande * 0.6;
+    const s = Math.max(0.4, 1 - altura * 1.4);
     sombra.scale.set(s, s, s);
     pista.material.color.setHSL((t * 0.08) % 1, 0.9, 0.55);
     aro.rotation.z = t * 0.5;
