@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amigo Invisible</title>
+  <style>:root {
+  --rojo: #c8102e;
+  --rojo-oscuro: #8b0a1f;
+  --verde: #1e7a46;
+  --dorado: #f4c542;
+  --crema: #fff8ec;
+  --texto: #2b1d14;
+  --gris: #7a6a58;
+  --fondo-1: #0f2a1d;
+  --fondo-2: #071510;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: var(--texto);
+  background: radial-gradient(circle at top, var(--fondo-1), var(--fondo-2));
+  overflow-x: hidden;
+}
+
+/* Capa de fondo (copos de nieve por ahora; después el Santa) */
+#fondo {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.copo {
+  position: absolute;
+  top: -20px;
+  color: #fff;
+  opacity: 0.8;
+  animation: caer linear infinite;
+}
+@keyframes caer {
+  to { transform: translateY(110vh) rotate(360deg); }
+}
+
+.contenedor {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+h1 {
+  text-align: center;
+  color: #fff;
+  font-size: 2.2rem;
+  text-shadow: 0 3px 0 var(--rojo-oscuro), 0 0 18px rgba(244, 197, 66, 0.5);
+  margin: 8px 0 24px;
+}
+
+.tarjeta {
+  background: var(--crema);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border: 3px solid var(--dorado);
+}
+
+.oculto { display: none; }
+
+/* ¿Quién sos? */
+.etiqueta {
+  display: block;
+  font-weight: 700;
+  color: var(--verde);
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+}
+/* Menú de nombres */
+.selector {
+  position: relative;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.selector-boton {
+  --c: var(--verde);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--texto);
+  background: #fff;
+  border: 2px solid var(--c);
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--c) 45%, #000), 0 0 0 0 transparent;
+  transition: box-shadow 0.25s, transform 0.1s, border-color 0.25s;
+}
+.selector-boton:hover:not(:disabled),
+.selector-boton:focus-visible {
+  outline: none;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--c) 45%, #000), 0 0 18px 2px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.selector-boton:active:not(:disabled) { transform: translateY(2px); }
+.selector-boton:disabled { cursor: wait; opacity: 0.75; }
+.selector-boton.elegido { background: color-mix(in srgb, var(--c) 10%, #fff); }
+.selector-boton.elegido::after { animation-duration: 2.8s; }
+
+.selector-texto { flex: 1; }
+.selector-flecha {
+  font-size: 1.3rem;
+  color: var(--c);
+  transition: transform 0.25s;
+}
+.selector.abierto .selector-flecha { transform: rotate(180deg); }
+
+.selector-lista {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  max-height: min(60vh, 470px);
+  overflow-y: auto;
+  background: #1a0f0a;
+  border: 2px solid var(--dorado);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 24px rgba(244, 197, 66, 0.25);
+  animation: lista-abrir 0.22s ease-out;
+}
+.selector-lista[hidden] { display: none; }
+@keyframes lista-abrir {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+}
+
+.opcion {
+  --c: #fff;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: left;
+  color: #fff;
+  background: color-mix(in srgb, var(--c) 14%, #1a0f0a);
+  border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
+  border-radius: 12px;
+  cursor: pointer;
+  opacity: 0;
+  animation: opcion-entrar 0.3s ease-out forwards;
+  animation-delay: calc(var(--i) * 35ms);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.opcion:last-child { margin-bottom: 0; }
+.opcion:hover,
+.opcion:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--c) 32%, #1a0f0a);
+  box-shadow: 0 0 16px 1px color-mix(in srgb, var(--c) 60%, transparent), inset 0 0 0 1px var(--c);
+  transform: translateX(4px);
+}
+.opcion[aria-selected="true"] {
+  background: color-mix(in srgb, var(--c) 40%, #1a0f0a);
+  box-shadow: inset 0 0 0 2px var(--c);
+}
+@keyframes opcion-entrar {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Barrido de luz (del color de cada nombre) */
+.opcion::after,
+.selector-boton.elegido::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -45%;
+  width: 40%;
+  pointer-events: none;
+  background: linear-gradient(100deg,
+    transparent 0%,
+    color-mix(in srgb, var(--c) 70%, transparent) 45%,
+    rgba(255, 255, 255, 0.85) 50%,
+    color-mix(in srgb, var(--c) 70%, transparent) 55%,
+    transparent 100%);
+  transform: skewX(-18deg);
+  mix-blend-mode: screen;
+  animation: barrido 2.2s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.18s);
+}
+.selector-boton.elegido::after { mix-blend-mode: normal; opacity: 0.55; }
+@keyframes barrido {
+  0% { left: -45%; }
+  55%, 100% { left: 120%; }
+}
+
+.inicial {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1a0f0a;
+  background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 80%, transparent);
+}
+.inicial.oculto { display: none; }
+
+/* Botones */
+.btn {
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  border-radius: 10px;
+  transition: transform 0.1s, filter 0.2s;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-principal {
+  display: block;
+  width: 100%;
+  background: var(--rojo);
+  color: #fff;
+  font-size: 1.4rem;
+  padding: 16px;
+  box-shadow: 0 5px 0 var(--rojo-oscuro);
+}
+.btn-principal:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-principal:active:not(:disabled) { box-shadow: 0 2px 0 var(--rojo-oscuro); transform: translateY(3px); }
+
+/* Ruleta */
+.tarjeta-sorteo { text-align: center; }
+
+.ruleta {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: repeating-linear-gradient(45deg, var(--rojo) 0 14px, #fff 14px 28px);
+  padding: 8px;
+}
+#nombre-actual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--crema);
+  border-radius: 8px;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 10px;
+}
+.ruleta.girando #nombre-actual { color: #9a8a78; }
+.ruleta.ganador #nombre-actual {
+  color: var(--rojo);
+  animation: pop 0.5s ease-out;
+}
+.ruleta.ganador {
+  animation: brillo 1s ease-in-out 3;
+}
+@keyframes pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes brillo {
+  50% { box-shadow: 0 0 30px 8px var(--dorado); }
+}
+
+.mensaje {
+  min-height: 1.4em;
+  margin: 16px 0 0;
+  font-weight: 600;
+  color: var(--verde);
+}
+.mensaje.error { color: var(--rojo); }
+
+.aviso-demo {
+  text-align: center;
+  color: var(--dorado);
+  font-size: 0.85rem;
+}
+
+/* Santa bailando */
+.santa-baile {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 12px;
+  z-index: 0;
+}
+.santa-svg { max-width: 60vw; height: auto; overflow: visible; }
+
+.santa { transform-origin: 100px 230px; animation: santa-rebote 0.5s ease-in-out infinite alternate; }
+.sombra { fill: rgba(0, 0, 0, 0.35); transform-origin: 100px 248px; animation: sombra 0.5s ease-in-out infinite alternate; }
+.pierna-izq { transform-origin: 85px 165px; animation: pierna-izq 0.5s ease-in-out infinite alternate; }
+.pierna-der { transform-origin: 115px 165px; animation: pierna-der 0.5s ease-in-out infinite alternate; }
+.brazo-izq { transform-origin: 64px 113px; animation: brazo-izq 0.25s ease-in-out infinite alternate; }
+.brazo-der { transform-origin: 136px 113px; animation: brazo-der 0.25s ease-in-out infinite alternate; animation-delay: -0.125s; }
+.cabeza { transform-origin: 100px 98px; animation: cabeza 0.5s ease-in-out infinite alternate; }
+.gorro { transform-origin: 100px 48px; animation: gorro 0.5s ease-in-out infinite alternate-reverse; }
+.boca { transform-origin: 100px 95px; animation: boca 0.25s ease-in-out infinite alternate; }
+.ojo { transform-box: fill-box; transform-origin: center; animation: parpadeo 3.5s infinite; }
+
+@keyframes santa-rebote {
+  from { transform: translateY(0) rotate(-5deg); }
+  to { transform: translateY(-14px) rotate(5deg); }
+}
+@keyframes sombra {
+  from { transform: scaleX(1); opacity: 1; }
+  to { transform: scaleX(0.75); opacity: 0.6; }
+}
+@keyframes pierna-izq {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(28deg); }
+}
+@keyframes pierna-der {
+  from { transform: rotate(-28deg); }
+  to { transform: rotate(0deg); }
+}
+@keyframes brazo-izq {
+  from { transform: rotate(25deg); }
+  to { transform: rotate(-45deg); }
+}
+@keyframes brazo-der {
+  from { transform: rotate(-25deg); }
+  to { transform: rotate(45deg); }
+}
+@keyframes cabeza {
+  from { transform: rotate(6deg); }
+  to { transform: rotate(-6deg); }
+}
+@keyframes gorro {
+  from { transform: rotate(-10deg); }
+  to { transform: rotate(8deg); }
+}
+@keyframes boca {
+  from { transform: scaleY(0.5); }
+  to { transform: scaleY(1.2); }
+}
+@keyframes parpadeo {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+.nota {
+  position: absolute;
+  bottom: 55%;
+  font-size: 1.6rem;
+  font-weight: 700;
+  opacity: 0;
+  animation: nota-flotar 2.4s ease-out infinite;
+}
+.nota-1 { left: calc(50% - 115px); color: #f4c542; }
+.nota-2 { left: calc(50% + 90px); color: #4fd1ff; animation-delay: 0.8s; }
+.nota-3 { left: calc(50% - 80px); color: #ff6fb5; animation-delay: 1.6s; }
+@keyframes nota-flotar {
+  0% { opacity: 0; transform: translateY(0) rotate(-10deg); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-70px) rotate(15deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .santa, .sombra, .pierna, .brazo, .cabeza, .gorro, .boca, .ojo, .nota,
+  .opcion::after, .selector-boton.elegido::after { animation: none; }
+  .opcion { opacity: 1; animation: none; }
+}
+
+/* Confeti */
+.confeti {
+  position: fixed;
+  top: -10px;
+  width: 10px;
+  height: 14px;
+  z-index: 10;
+  pointer-events: none;
+  animation: confeti-caer 2.5s ease-in forwards;
+}
+@keyframes confeti-caer {
+  to { transform: translateY(105vh) rotate(720deg); opacity: 0.7; }
+}
+</style>
+</head>
+<body>
+  <!-- Fondo: copos de nieve -->
+  <div id="fondo" aria-hidden="true"></div>
+
+  <main class="contenedor">
+    <h1>🎁 Amigo Invisible 🎁</h1>
+
+    <section class="tarjeta tarjeta-sorteo">
+      <p id="etiqueta-quien" class="etiqueta">¿Quién sos?</p>
+      <div id="selector" class="selector">
+        <button type="button" id="selector-boton" class="selector-boton"
+                aria-haspopup="listbox" aria-expanded="false" aria-labelledby="etiqueta-quien selector-texto" disabled>
+          <span id="selector-inicial" class="inicial oculto"></span>
+          <span id="selector-texto" class="selector-texto">Cargando participantes...</span>
+          <span class="selector-flecha" aria-hidden="true">▾</span>
+        </button>
+        <ul id="selector-lista" class="selector-lista" role="listbox" aria-labelledby="etiqueta-quien" hidden></ul>
+      </div>
+
+      <div id="ruleta" class="ruleta">
+        <span id="nombre-actual">¿Quién te toca?</span>
+      </div>
+
+      <button id="btn-sortear" class="btn btn-principal" disabled>🎲 Sortear</button>
+      <p id="mensaje" class="mensaje"></p>
+    </section>
+
+    <!-- Santa bailando -->
+    <div class="santa-baile" aria-hidden="true">
+      <span class="nota nota-1">♪</span>
+      <span class="nota nota-2">♫</span>
+      <span class="nota nota-3">♪</span>
+      <svg class="santa-svg" viewBox="0 0 200 260" width="190" height="247">
+        <ellipse class="sombra" cx="100" cy="248" rx="52" ry="7" />
+        <g class="santa">
+          <!-- Piernas -->
+          <g class="pierna pierna-izq">
+            <rect x="74" y="160" width="22" height="54" rx="9" fill="#a70f26" />
+            <rect x="64" y="206" width="34" height="18" rx="9" fill="#1d1d1d" />
+          </g>
+          <g class="pierna pierna-der">
+            <rect x="104" y="160" width="22" height="54" rx="9" fill="#a70f26" />
+            <rect x="102" y="206" width="34" height="18" rx="9" fill="#1d1d1d" />
+          </g>
+          <!-- Brazos -->
+          <g class="brazo brazo-izq">
+            <rect x="26" y="104" width="42" height="19" rx="9.5" fill="#d4142f" />
+            <rect x="24" y="102" width="11" height="23" rx="5" fill="#fff" />
+            <circle cx="19" cy="113.5" r="10" fill="#1d1d1d" />
+          </g>
+          <g class="brazo brazo-der">
+            <rect x="132" y="104" width="42" height="19" rx="9.5" fill="#d4142f" />
+            <rect x="165" y="102" width="11" height="23" rx="5" fill="#fff" />
+            <circle cx="181" cy="113.5" r="10" fill="#1d1d1d" />
+          </g>
+          <!-- Cuerpo -->
+          <ellipse cx="100" cy="138" rx="48" ry="46" fill="#d4142f" />
+          <rect x="94" y="96" width="12" height="84" fill="#fff" />
+          <rect x="56" y="170" width="88" height="13" rx="6.5" fill="#fff" />
+          <rect x="53" y="146" width="94" height="13" fill="#1d1d1d" />
+          <rect x="87" y="143" width="26" height="19" rx="3" fill="none" stroke="#f4c542" stroke-width="4" />
+          <!-- Cabeza -->
+          <g class="cabeza">
+            <circle cx="100" cy="72" r="27" fill="#f6c9a8" />
+            <circle cx="84" cy="77" r="5" fill="#f28b8b" opacity="0.55" />
+            <circle cx="116" cy="77" r="5" fill="#f28b8b" opacity="0.55" />
+            <path d="M71 66 Q68 106 100 122 Q132 106 129 66 Q116 88 100 88 Q84 88 71 66 Z" fill="#fff" />
+            <ellipse class="boca" cx="100" cy="95" rx="5" ry="4" fill="#7a1020" />
+            <ellipse cx="91" cy="86" rx="10" ry="5.5" fill="#fff" />
+            <ellipse cx="109" cy="86" rx="10" ry="5.5" fill="#fff" />
+            <circle cx="100" cy="79" r="5.5" fill="#e89a78" />
+            <circle class="ojo" cx="90" cy="66" r="3" fill="#2b1d14" />
+            <circle class="ojo" cx="110" cy="66" r="3" fill="#2b1d14" />
+            <g class="gorro">
+              <path d="M73 47 Q90 4 142 16 Q122 26 127 47 Z" fill="#d4142f" />
+              <rect x="68" y="42" width="64" height="13" rx="6.5" fill="#fff" />
+              <circle cx="144" cy="17" r="9" fill="#fff" />
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <p id="aviso-demo" class="aviso-demo oculto">
+      Modo prueba: todavía no está conectado el Apps Script (ver INSTRUCCIONES.md).
+    </p>
+  </main>
+
+  <script>// =====================================================
+// CONFIGURACIÓN
+// Pegá acá la URL de tu Apps Script (termina en /exec).
+// Si queda vacía, la web funciona en "modo prueba" con nombres de ejemplo.
+// =====================================================
+const SCRIPT_URL = "";
+
+const MODO_DEMO = !SCRIPT_URL;
+const CLAVE_RESULTADO = "amigo-invisible-resultado";
+
+// ---------- Elementos ----------
+const selector = document.getElementById("selector");
+const selectorBoton = document.getElementById("selector-boton");
+const selectorTexto = document.getElementById("selector-texto");
+const selectorInicial = document.getElementById("selector-inicial");
+const selectorLista = document.getElementById("selector-lista");
+const ruleta = document.getElementById("ruleta");
+const nombreActual = document.getElementById("nombre-actual");
+const btnSortear = document.getElementById("btn-sortear");
+const mensaje = document.getElementById("mensaje");
+const avisoDemo = document.getElementById("aviso-demo");
+
+let participantes = [];
+let quienElegido = "";
+
+// Un color de luz distinto para cada nombre (se repiten si hay más de 12).
+const COLORES_NOMBRES = [
+  "#ff4d6d", "#ffc93c", "#3ddc84", "#4fd1ff", "#b388ff", "#ff8a3d",
+  "#ff6fb5", "#7cf5e0", "#c6ff4d", "#6e8bff", "#ff5ce1", "#ffe066",
+];
+function colorDe(nombre) {
+  const i = participantes.indexOf(nombre);
+  return COLORES_NOMBRES[(i < 0 ? 0 : i) % COLORES_NOMBRES.length];
+}
+
+// ---------- Comunicación con el Apps Script ----------
+async function api(params) {
+  if (MODO_DEMO) return apiDemo(params);
+  const url = SCRIPT_URL + "?" + new URLSearchParams(params);
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error("El servidor respondió " + resp.status);
+  return resp.json();
+}
+
+// Simulación local para probar sin Apps Script
+const demo = { nombres: ["Fernando","Juani","Flor","Alejandra","Beti","Nacho","Daniela","Ezequiel","Caro","Charli"], asignaciones: null, sorteados: [] };
+async function apiDemo(params) {
+  await new Promise(r => setTimeout(r, 800));
+  if (params.accion === "participantes") return { ok: true, participantes: demo.nombres };
+  if (params.accion === "sortear") {
+    if (!demo.asignaciones) {
+      const s = [...demo.nombres].sort(() => Math.random() - 0.5);
+      demo.asignaciones = {};
+      s.forEach((n, i) => { demo.asignaciones[n] = s[(i + 1) % s.length]; });
+    }
+    if (demo.sorteados.includes(params.nombre)) return { ok: true, yaSorteo: true };
+    demo.sorteados.push(params.nombre);
+    console.log(`[demo] Mail al organizador: "${params.nombre} ya hizo su sorteo (${demo.sorteados.length} de ${demo.nombres.length})"`);
+    return { ok: true, yaSorteo: false, teToca: demo.asignaciones[params.nombre] };
+  }
+  return { ok: false, error: "Acción desconocida" };
+}
+
+// ---------- Guardado local del resultado ----------
+function leerResultado() {
+  try { return JSON.parse(localStorage.getItem(CLAVE_RESULTADO)); } catch (e) { return null; }
+}
+function guardarResultado(nombre, teToca) {
+  try { localStorage.setItem(CLAVE_RESULTADO, JSON.stringify({ nombre, teToca })); } catch (e) { /* ignorar */ }
+}
+
+// ---------- UI ----------
+function mostrarMensaje(texto, esError = false) {
+  mensaje.textContent = texto;
+  mensaje.classList.toggle("error", esError);
+}
+
+function aleatorio(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function mostrarGanador(nombre) {
+  nombreActual.textContent = nombre;
+  ruleta.classList.remove("girando");
+  void ruleta.offsetWidth; // reinicia la animación
+  ruleta.classList.add("ganador");
+}
+
+// Hace girar los nombres hasta que se llame a parar(nombreFinal).
+// Gira rápido mientras espera la respuesta y después frena de a poco.
+function girar(nombresGiro) {
+  let delay = 50;
+  let final = null;
+  let frenando = false;
+  let cancelado = false;
+  let anterior = null;
+  let resolver;
+  const inicio = Date.now();
+  const terminado = new Promise(r => (resolver = r));
+
+  ruleta.classList.remove("ganador");
+  ruleta.classList.add("girando");
+
+  function tick() {
+    if (cancelado) return;
+    if (frenando && delay >= 450) {
+      mostrarGanador(final);
+      resolver();
+      return;
+    }
+    let n = aleatorio(nombresGiro);
+    if (nombresGiro.length > 1) while (n === anterior) n = aleatorio(nombresGiro);
+    anterior = n;
+    nombreActual.textContent = n;
+
+    if (frenando) delay *= 1.12;
+    else if (final !== null && Date.now() - inicio > 1500) frenando = true;
+    setTimeout(tick, delay);
+  }
+  tick();
+
+  return {
+    parar(nombreFinal) { final = nombreFinal; return terminado; },
+    cancelar(texto) {
+      cancelado = true;
+      ruleta.classList.remove("girando");
+      nombreActual.textContent = texto;
+    },
+  };
+}
+
+function bloquear() {
+  cerrarLista();
+  selectorBoton.disabled = true;
+  btnSortear.disabled = true;
+}
+
+// ---------- Menú de nombres ----------
+function armarLista() {
+  selectorLista.innerHTML = "";
+  participantes.forEach((n, i) => {
+    const li = document.createElement("li");
+    li.setAttribute("role", "presentation");
+    const op = document.createElement("button");
+    op.type = "button";
+    op.className = "opcion";
+    op.setAttribute("role", "option");
+    op.setAttribute("aria-selected", "false");
+    op.dataset.nombre = n;
+    op.style.setProperty("--c", colorDe(n));
+    op.style.setProperty("--i", i);
+    op.innerHTML = '<span class="inicial"></span><span></span>';
+    op.firstChild.textContent = n.charAt(0).toUpperCase();
+    op.lastChild.textContent = n;
+    op.addEventListener("click", () => elegir(n, true));
+    li.appendChild(op);
+    selectorLista.appendChild(li);
+  });
+}
+
+function opciones() {
+  return [...selectorLista.querySelectorAll(".opcion")];
+}
+
+function abrirLista() {
+  if (selectorBoton.disabled) return;
+  selectorLista.hidden = false;
+  selector.classList.add("abierto");
+  selectorBoton.setAttribute("aria-expanded", "true");
+  // Reinicia la animación de entrada de cada nombre
+  opciones().forEach(op => { op.style.animation = "none"; void op.offsetWidth; op.style.animation = ""; });
+  const actual = opciones().find(op => op.dataset.nombre === quienElegido) || opciones()[0];
+  if (actual) actual.focus({ preventScroll: true });
+}
+
+function cerrarLista(volverAlBoton = false) {
+  if (selectorLista.hidden) return;
+  selectorLista.hidden = true;
+  selector.classList.remove("abierto");
+  selectorBoton.setAttribute("aria-expanded", "false");
+  if (volverAlBoton) selectorBoton.focus();
+}
+
+function elegir(nombre, desdeLista = false) {
+  quienElegido = nombre;
+  const color = colorDe(nombre);
+  selectorTexto.textContent = nombre;
+  selectorInicial.textContent = nombre.charAt(0).toUpperCase();
+  selectorInicial.classList.remove("oculto");
+  selectorBoton.style.setProperty("--c", color);
+  selectorBoton.classList.add("elegido");
+  opciones().forEach(op => op.setAttribute("aria-selected", String(op.dataset.nombre === nombre)));
+  if (mensaje.classList.contains("error")) mostrarMensaje("");
+  cerrarLista(desdeLista);
+}
+
+selectorBoton.addEventListener("click", () => {
+  if (selectorLista.hidden) abrirLista();
+  else cerrarLista();
+});
+
+selectorBoton.addEventListener("keydown", e => {
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    abrirLista();
+  }
+});
+
+selectorLista.addEventListener("keydown", e => {
+  const ops = opciones();
+  const i = ops.indexOf(document.activeElement);
+  if (e.key === "ArrowDown") { e.preventDefault(); ops[(i + 1) % ops.length].focus(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); ops[(i - 1 + ops.length) % ops.length].focus(); }
+  else if (e.key === "Home") { e.preventDefault(); ops[0].focus(); }
+  else if (e.key === "End") { e.preventDefault(); ops[ops.length - 1].focus(); }
+  else if (e.key === "Escape" || e.key === "Tab") { cerrarLista(e.key === "Escape"); }
+});
+
+document.addEventListener("click", e => {
+  if (!selector.contains(e.target)) cerrarLista();
+});
+
+// ---------- Sorteo ----------
+async function sortear() {
+  const quien = quienElegido;
+  if (!quien) {
+    mostrarMensaje("Primero elegí tu nombre 👆", true);
+    return;
+  }
+  bloquear();
+  mostrarMensaje("");
+
+  const otros = participantes.filter(n => n !== quien);
+  const giro = girar(otros.length ? otros : participantes);
+
+  try {
+    const res = await api({ accion: "sortear", nombre: quien });
+    if (!res.ok) throw new Error(res.error || "Algo salió mal");
+
+    if (res.yaSorteo) {
+      giro.cancelar("🤔");
+      mostrarMensaje(`${quien}, vos ya hiciste tu sorteo. Si no fuiste vos, avisale al organizador.`, true);
+      return;
+    }
+
+    await giro.parar(res.teToca);
+    guardarResultado(quien, res.teToca);
+    mostrarMensaje(`¡${quien}, te toca regalarle a ${res.teToca}! 🤫 No le digas a nadie.`);
+    lanzarConfeti();
+  } catch (err) {
+    giro.cancelar("😕");
+    mostrarMensaje("No se pudo sortear: " + err.message + ". Probá de nuevo.", true);
+    selectorBoton.disabled = false;
+    btnSortear.disabled = false;
+  }
+}
+
+// ---------- Efectos ----------
+function lanzarConfeti() {
+  const colores = ["#c8102e", "#1e7a46", "#f4c542", "#ffffff"];
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement("div");
+    c.className = "confeti";
+    c.style.left = Math.random() * 100 + "vw";
+    c.style.background = aleatorio(colores);
+    c.style.animationDelay = Math.random() * 0.6 + "s";
+    c.style.animationDuration = 2 + Math.random() * 1.5 + "s";
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 4500);
+  }
+}
+
+function crearNieve() {
+  const fondo = document.getElementById("fondo");
+  for (let i = 0; i < 40; i++) {
+    const copo = document.createElement("span");
+    copo.className = "copo";
+    copo.textContent = "❄";
+    copo.style.left = Math.random() * 100 + "vw";
+    copo.style.fontSize = 8 + Math.random() * 14 + "px";
+    copo.style.animationDuration = 6 + Math.random() * 10 + "s";
+    copo.style.animationDelay = -Math.random() * 16 + "s";
+    fondo.appendChild(copo);
+  }
+}
+
+// ---------- Inicio ----------
+async function iniciar() {
+  crearNieve();
+  avisoDemo.classList.toggle("oculto", !MODO_DEMO);
+
+  // Si este dispositivo ya sorteó, mostrar el resultado directamente
+  const previo = leerResultado();
+
+  try {
+    const res = await api({ accion: "participantes" });
+    if (!res.ok) throw new Error(res.error);
+    participantes = res.participantes;
+  } catch (err) {
+    selectorTexto.textContent = "No se pudo cargar";
+    mostrarMensaje("No se pudo conectar con el sorteo. Recargá la página.", true);
+    return;
+  }
+
+  selectorTexto.textContent = "Elegí tu nombre";
+  armarLista();
+
+  if (previo && participantes.includes(previo.nombre)) {
+    elegir(previo.nombre);
+    mostrarGanador(previo.teToca);
+    mostrarMensaje(`${previo.nombre}, ya sorteaste: te toca ${previo.teToca} 🎁`);
+    bloquear();
+    return;
+  }
+
+  selectorBoton.disabled = false;
+  btnSortear.disabled = false;
+}
+
+btnSortear.addEventListener("click", sortear);
+iniciar();
+</script>
+</body>
+</html>
