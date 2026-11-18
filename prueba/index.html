@@ -322,7 +322,7 @@ h1 {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 230px;
+  height: 260px;
   margin: 0 0 8px;
   -webkit-tap-highlight-color: transparent;
 }
@@ -335,7 +335,7 @@ h1 {
   left: 0;
   top: -150px;
   width: 100%;
-  height: 380px;
+  height: 410px;
   pointer-events: none;
 }
 .santa-baile.con-3d { cursor: pointer; }
@@ -820,7 +820,7 @@ iniciar();
 
   const escena = new THREE.Scene();
   const camara = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
-  const PIXELES_POR_UNIDAD = 70;   // tamaño del Santa en pantalla
+  const PIXELES_POR_UNIDAD = 84;   // tamaño del Santa en pantalla
 
   escena.add(new THREE.HemisphereLight(0xfff4e0, 0x203040, 0.65));
   const sol = new THREE.DirectionalLight(0xffffff, 0.7);
@@ -1006,7 +1006,7 @@ iniciar();
   // Estrellitas de mareo
   const formaEstrella = new THREE.Shape();
   for (let i = 0; i < 10; i++) {
-    const r = i % 2 === 0 ? 0.09 : 0.04;
+    const r = i % 2 === 0 ? 0.14 : 0.062;
     const a = (i / 10) * PI * 2 - PI / 2;
     if (i === 0) formaEstrella.moveTo(Math.cos(a) * r, Math.sin(a) * r);
     else formaEstrella.lineTo(Math.cos(a) * r, Math.sin(a) * r);
@@ -1218,7 +1218,7 @@ iniciar();
     cabeza.getWorldPosition(v);
     estrellas.forEach((e, i) => {
       const a = t * 4 + (i * PI * 2) / estrellas.length;
-      e.position.set(v.x + Math.cos(a) * 0.5, v.y + 0.62 + Math.sin(a * 2) * 0.04, v.z + Math.sin(a) * 0.35);
+      e.position.set(v.x + Math.cos(a) * 0.62, v.y + 0.7 + Math.sin(a * 2) * 0.06, v.z + Math.sin(a) * 0.4);
       e.lookAt(camara.position);
       e.rotation.z += t * 3;
       e.material.opacity = p.estrellas;
