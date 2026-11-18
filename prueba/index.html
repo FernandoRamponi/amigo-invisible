@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amigo Invisible</title>
+  <style>:root {
+  --rojo: #c8102e;
+  --rojo-oscuro: #8b0a1f;
+  --verde: #1e7a46;
+  --dorado: #f4c542;
+  --crema: #fff8ec;
+  --texto: #2b1d14;
+  --gris: #7a6a58;
+  --fondo-1: #0f2a1d;
+  --fondo-2: #071510;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: var(--texto);
+  background: radial-gradient(circle at top, var(--fondo-1), var(--fondo-2));
+  overflow-x: hidden;
+}
+
+/* Capa de fondo (copos de nieve por ahora; después el Santa) */
+#fondo {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.copo {
+  position: absolute;
+  top: -20px;
+  color: #fff;
+  opacity: 0.8;
+  animation: caer linear infinite;
+}
+@keyframes caer {
+  to { transform: translateY(110vh) rotate(360deg); }
+}
+
+.contenedor {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+h1 {
+  text-align: center;
+  color: #fff;
+  font-size: 2.2rem;
+  text-shadow: 0 3px 0 var(--rojo-oscuro), 0 0 18px rgba(244, 197, 66, 0.5);
+  margin: 8px 0 24px;
+}
+
+.tarjeta {
+  background: var(--crema);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border: 3px solid var(--dorado);
+}
+
+.oculto { display: none; }
+
+/* ¿Quién sos? */
+.etiqueta {
+  display: block;
+  font-weight: 700;
+  color: var(--verde);
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+}
+/* Menú de nombres */
+.selector {
+  position: relative;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.selector-boton {
+  --c: var(--verde);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--texto);
+  background: #fff;
+  border: 2px solid var(--c);
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--c) 45%, #000), 0 0 0 0 transparent;
+  transition: box-shadow 0.25s, transform 0.1s, border-color 0.25s;
+}
+.selector-boton:hover:not(:disabled),
+.selector-boton:focus-visible {
+  outline: none;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--c) 45%, #000), 0 0 18px 2px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.selector-boton:active:not(:disabled) { transform: translateY(2px); }
+.selector-boton:disabled { cursor: wait; opacity: 0.75; }
+.selector-boton.elegido { background: color-mix(in srgb, var(--c) 10%, #fff); }
+.selector-boton.elegido::after { animation-duration: 2.8s; }
+
+.selector-texto { flex: 1; }
+.selector-flecha {
+  font-size: 1.3rem;
+  color: var(--c);
+  transition: transform 0.25s;
+}
+.selector.abierto .selector-flecha { transform: rotate(180deg); }
+
+.selector-lista {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  max-height: min(60vh, 470px);
+  overflow-y: auto;
+  background: #1a0f0a;
+  border: 2px solid var(--dorado);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 24px rgba(244, 197, 66, 0.25);
+  animation: lista-abrir 0.22s ease-out;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dorado) transparent;
+}
+.selector-lista[hidden] { display: none; }
+@keyframes lista-abrir {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+}
+
+.opcion {
+  --c: #fff;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: left;
+  color: #fff;
+  background: color-mix(in srgb, var(--c) 14%, #1a0f0a);
+  border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
+  border-radius: 12px;
+  cursor: pointer;
+  opacity: 0;
+  animation: opcion-entrar 0.3s ease-out forwards;
+  animation-delay: calc(var(--i) * 35ms);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.opcion:last-child { margin-bottom: 0; }
+.opcion:hover,
+.opcion:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--c) 32%, #1a0f0a);
+  box-shadow: 0 0 16px 1px color-mix(in srgb, var(--c) 60%, transparent), inset 0 0 0 1px var(--c);
+  transform: translateX(4px);
+}
+.opcion[aria-selected="true"] {
+  background: color-mix(in srgb, var(--c) 40%, #1a0f0a);
+  box-shadow: inset 0 0 0 2px var(--c);
+}
+@keyframes opcion-entrar {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Barrido de luz (del color de cada nombre) */
+.opcion::after,
+.selector-boton.elegido::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -45%;
+  width: 40%;
+  pointer-events: none;
+  background: linear-gradient(100deg,
+    transparent 0%,
+    color-mix(in srgb, var(--c) 70%, transparent) 45%,
+    rgba(255, 255, 255, 0.85) 50%,
+    color-mix(in srgb, var(--c) 70%, transparent) 55%,
+    transparent 100%);
+  transform: skewX(-18deg);
+  mix-blend-mode: screen;
+  animation: barrido 2.2s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.18s);
+}
+.selector-boton.elegido::after { mix-blend-mode: normal; opacity: 0.55; }
+@keyframes barrido {
+  0% { left: -45%; }
+  55%, 100% { left: 120%; }
+}
+
+.inicial {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1a0f0a;
+  background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 80%, transparent);
+}
+.inicial.oculto { display: none; }
+
+/* Botones */
+.btn {
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  border-radius: 10px;
+  transition: transform 0.1s, filter 0.2s;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-principal {
+  display: block;
+  width: 100%;
+  background: var(--rojo);
+  color: #fff;
+  font-size: 1.4rem;
+  padding: 16px;
+  box-shadow: 0 5px 0 var(--rojo-oscuro);
+}
+.btn-principal:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-principal:active:not(:disabled) { box-shadow: 0 2px 0 var(--rojo-oscuro); transform: translateY(3px); }
+
+/* Ruleta */
+.tarjeta-sorteo { text-align: center; }
+
+.ruleta {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: repeating-linear-gradient(45deg, var(--rojo) 0 14px, #fff 14px 28px);
+  padding: 8px;
+}
+#nombre-actual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--crema);
+  border-radius: 8px;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 10px;
+}
+.ruleta.girando #nombre-actual { color: #9a8a78; }
+.ruleta.ganador #nombre-actual {
+  color: var(--rojo);
+  animation: pop 0.5s ease-out;
+}
+.ruleta.ganador {
+  animation: brillo 1s ease-in-out 3;
+}
+@keyframes pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes brillo {
+  50% { box-shadow: 0 0 30px 8px var(--dorado); }
+}
+
+.mensaje {
+  min-height: 1.4em;
+  margin: 16px 0 0;
+  font-weight: 600;
+  color: var(--verde);
+}
+.mensaje.error { color: var(--rojo); }
+
+.aviso-demo {
+  text-align: center;
+  color: var(--dorado);
+  font-size: 0.85rem;
+}
+
+/* Mini Santa: vive abajo de la tarjeta, salta, se agarra del borde y se cae */
+.santa-baile {
+  position: relative;
+  z-index: 2;                 /* por encima de la tarjeta, para que se vean las manos agarrando el borde */
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 230px;
+  margin: 0 0 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+.santa-svg { max-width: 60vw; height: auto; overflow: visible; }
+
+/* El lienzo 3D sube por detrás del borde de la tarjeta; no tapa clics */
+.santa-3d {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: -150px;
+  width: 100%;
+  height: 380px;
+  pointer-events: none;
+}
+.santa-baile.con-3d { cursor: pointer; }
+.santa-baile.con-3d .santa-svg { display: none; }
+.santa-baile.con-3d .santa-3d { display: block; }
+
+/* Santa plano de respaldo (si el navegador no tiene 3D): se balancea tranquilo */
+.santa { transform-origin: 100px 230px; animation: santa-respira 1.6s ease-in-out infinite alternate; }
+.sombra { fill: rgba(0, 0, 0, 0.35); }
+.ojo { transform-box: fill-box; transform-origin: center; animation: parpadeo 3.5s infinite; }
+
+@keyframes santa-respira {
+  from { transform: translateY(0) rotate(-2deg); }
+  to { transform: translateY(-4px) rotate(2deg); }
+}
+@keyframes parpadeo {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .santa, .ojo,
+  .opcion::after, .selector-boton.elegido::after { animation: none; }
+  .opcion { opacity: 1; animation: none; }
+}
+
+/* Confeti */
+.confeti {
+  position: fixed;
+  top: -10px;
+  width: 10px;
+  height: 14px;
+  z-index: 10;
+  pointer-events: none;
+  animation: confeti-caer 2.5s ease-in forwards;
+}
+@keyframes confeti-caer {
+  to { transform: translateY(105vh) rotate(720deg); opacity: 0.7; }
+}
+</style>
+</head>
+<body>
+  <!-- Fondo: copos de nieve -->
+  <div id="fondo" aria-hidden="true"></div>
+
+  <main class="contenedor">
+    <h1>🎁 Amigo Invisible 🎁</h1>
+
+    <section class="tarjeta tarjeta-sorteo">
+      <p id="etiqueta-quien" class="etiqueta">¿Quién sos?</p>
+      <div id="selector" class="selector">
+        <button type="button" id="selector-boton" class="selector-boton"
+                aria-haspopup="listbox" aria-expanded="false" aria-labelledby="etiqueta-quien selector-texto" disabled>
+          <span id="selector-inicial" class="inicial oculto"></span>
+          <span id="selector-texto" class="selector-texto">Cargando participantes...</span>
+          <span class="selector-flecha" aria-hidden="true">▾</span>
+        </button>
+        <ul id="selector-lista" class="selector-lista" role="listbox" aria-labelledby="etiqueta-quien" hidden></ul>
+      </div>
+
+      <div id="ruleta" class="ruleta">
+        <span id="nombre-actual">¿Quién te toca?</span>
+      </div>
+
+      <button id="btn-sortear" class="btn btn-principal" disabled>🎲 Sortear</button>
+      <p id="mensaje" class="mensaje"></p>
+    </section>
+
+    <!-- Mini Santa: 3D con santa3d.js (salta, se agarra de la tarjeta y se cae); si no hay 3D, queda este dibujo plano -->
+    <div class="santa-baile" aria-hidden="true" title="¡Tocalo!">
+      <svg class="santa-svg" viewBox="0 0 200 260" width="190" height="247">
+        <ellipse class="sombra" cx="100" cy="248" rx="52" ry="7" />
+        <g class="santa">
+          <!-- Piernas -->
+          <g class="pierna pierna-izq">
+            <rect x="74" y="160" width="22" height="54" rx="9" fill="#a70f26" />
+            <rect x="64" y="206" width="34" height="18" rx="9" fill="#1d1d1d" />
+          </g>
+          <g class="pierna pierna-der">
+            <rect x="104" y="160" width="22" height="54" rx="9" fill="#a70f26" />
+            <rect x="102" y="206" width="34" height="18" rx="9" fill="#1d1d1d" />
+          </g>
+          <!-- Brazos -->
+          <g class="brazo brazo-izq">
+            <rect x="26" y="104" width="42" height="19" rx="9.5" fill="#d4142f" />
+            <rect x="24" y="102" width="11" height="23" rx="5" fill="#fff" />
+            <circle cx="19" cy="113.5" r="10" fill="#1d1d1d" />
+          </g>
+          <g class="brazo brazo-der">
+            <rect x="132" y="104" width="42" height="19" rx="9.5" fill="#d4142f" />
+            <rect x="165" y="102" width="11" height="23" rx="5" fill="#fff" />
+            <circle cx="181" cy="113.5" r="10" fill="#1d1d1d" />
+          </g>
+          <!-- Cuerpo -->
+          <ellipse cx="100" cy="138" rx="48" ry="46" fill="#d4142f" />
+          <rect x="94" y="96" width="12" height="84" fill="#fff" />
+          <rect x="56" y="170" width="88" height="13" rx="6.5" fill="#fff" />
+          <rect x="53" y="146" width="94" height="13" fill="#1d1d1d" />
+          <rect x="87" y="143" width="26" height="19" rx="3" fill="none" stroke="#f4c542" stroke-width="4" />
+          <!-- Cabeza -->
+          <g class="cabeza">
+            <circle cx="100" cy="72" r="27" fill="#f6c9a8" />
+            <circle cx="84" cy="77" r="5" fill="#f28b8b" opacity="0.55" />
+            <circle cx="116" cy="77" r="5" fill="#f28b8b" opacity="0.55" />
+            <path d="M71 66 Q68 106 100 122 Q132 106 129 66 Q116 88 100 88 Q84 88 71 66 Z" fill="#fff" />
+            <ellipse class="boca" cx="100" cy="95" rx="5" ry="4" fill="#7a1020" />
+            <ellipse cx="91" cy="86" rx="10" ry="5.5" fill="#fff" />
+            <ellipse cx="109" cy="86" rx="10" ry="5.5" fill="#fff" />
+            <circle cx="100" cy="79" r="5.5" fill="#e89a78" />
+            <circle class="ojo" cx="90" cy="66" r="3" fill="#2b1d14" />
+            <circle class="ojo" cx="110" cy="66" r="3" fill="#2b1d14" />
+            <g class="gorro">
+              <path d="M73 47 Q90 4 142 16 Q122 26 127 47 Z" fill="#d4142f" />
+              <rect x="68" y="42" width="64" height="13" rx="6.5" fill="#fff" />
+              <circle cx="144" cy="17" r="9" fill="#fff" />
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <p id="aviso-demo" class="aviso-demo oculto">
+      Modo prueba: todavía no está conectado el Apps Script (ver INSTRUCCIONES.md).
+    </p>
+  </main>
+
+  <script>// =====================================================
+// CONFIGURACIÓN
+// Pegá acá la URL de tu Apps Script (termina en /exec).
+// Si queda vacía, la web funciona en "modo prueba" con nombres de ejemplo.
+// =====================================================
+const SCRIPT_URL = "";
+
+const MODO_DEMO = !SCRIPT_URL;
+const CLAVE_RESULTADO = "amigo-invisible-resultado";
+
+// ---------- Elementos ----------
+const selector = document.getElementById("selector");
+const selectorBoton = document.getElementById("selector-boton");
+const selectorTexto = document.getElementById("selector-texto");
+const selectorInicial = document.getElementById("selector-inicial");
+const selectorLista = document.getElementById("selector-lista");
+const ruleta = document.getElementById("ruleta");
+const nombreActual = document.getElementById("nombre-actual");
+const btnSortear = document.getElementById("btn-sortear");
+const mensaje = document.getElementById("mensaje");
+const avisoDemo = document.getElementById("aviso-demo");
+
+let participantes = [];
+let quienElegido = "";
+
+// Un color de luz distinto para cada nombre (se repiten si hay más de 12).
+const COLORES_NOMBRES = [
+  "#ff4d6d", "#ffc93c", "#3ddc84", "#4fd1ff", "#b388ff", "#ff8a3d",
+  "#ff6fb5", "#7cf5e0", "#c6ff4d", "#6e8bff", "#ff5ce1", "#ffe066",
+];
+function colorDe(nombre) {
+  const i = participantes.indexOf(nombre);
+  return COLORES_NOMBRES[(i < 0 ? 0 : i) % COLORES_NOMBRES.length];
+}
+
+// ---------- Comunicación con el Apps Script ----------
+async function api(params) {
+  if (MODO_DEMO) return apiDemo(params);
+  const url = SCRIPT_URL + "?" + new URLSearchParams(params);
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error("El servidor respondió " + resp.status);
+  return resp.json();
+}
+
+// Simulación local para probar sin Apps Script
+const demo = { nombres: ["Fernando","Juani","Flor","Alejandra","Beti","Nacho","Daniela","Ezequiel","Caro","Charli"], asignaciones: null, sorteados: [] };
+async function apiDemo(params) {
+  await new Promise(r => setTimeout(r, 800));
+  if (params.accion === "participantes") return { ok: true, participantes: demo.nombres };
+  if (params.accion === "sortear") {
+    if (!demo.asignaciones) {
+      const s = [...demo.nombres].sort(() => Math.random() - 0.5);
+      demo.asignaciones = {};
+      s.forEach((n, i) => { demo.asignaciones[n] = s[(i + 1) % s.length]; });
+    }
+    if (demo.sorteados.includes(params.nombre)) return { ok: true, yaSorteo: true };
+    demo.sorteados.push(params.nombre);
+    console.log(`[demo] Mail al organizador: "${params.nombre} ya hizo su sorteo (${demo.sorteados.length} de ${demo.nombres.length})"`);
+    return { ok: true, yaSorteo: false, teToca: demo.asignaciones[params.nombre] };
+  }
+  return { ok: false, error: "Acción desconocida" };
+}
+
+// ---------- Guardado local del resultado ----------
+function leerResultado() {
+  try { return JSON.parse(localStorage.getItem(CLAVE_RESULTADO)); } catch (e) { return null; }
+}
+function guardarResultado(nombre, teToca) {
+  try { localStorage.setItem(CLAVE_RESULTADO, JSON.stringify({ nombre, teToca })); } catch (e) { /* ignorar */ }
+}
+
+// ---------- UI ----------
+function mostrarMensaje(texto, esError = false) {
+  mensaje.textContent = texto;
+  mensaje.classList.toggle("error", esError);
+}
+
+function aleatorio(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function mostrarGanador(nombre) {
+  nombreActual.textContent = nombre;
+  ruleta.classList.remove("girando");
+  void ruleta.offsetWidth; // reinicia la animación
+  ruleta.classList.add("ganador");
+}
+
+// Hace girar los nombres hasta que se llame a parar(nombreFinal).
+// Gira rápido mientras espera la respuesta y después frena de a poco.
+function girar(nombresGiro) {
+  let delay = 50;
+  let final = null;
+  let frenando = false;
+  let cancelado = false;
+  let anterior = null;
+  let resolver;
+  const inicio = Date.now();
+  const terminado = new Promise(r => (resolver = r));
+
+  ruleta.classList.remove("ganador");
+  ruleta.classList.add("girando");
+
+  function tick() {
+    if (cancelado) return;
+    if (frenando && delay >= 450) {
+      mostrarGanador(final);
+      resolver();
+      return;
+    }
+    let n = aleatorio(nombresGiro);
+    if (nombresGiro.length > 1) while (n === anterior) n = aleatorio(nombresGiro);
+    anterior = n;
+    nombreActual.textContent = n;
+
+    if (frenando) delay *= 1.12;
+    else if (final !== null && Date.now() - inicio > 1500) frenando = true;
+    setTimeout(tick, delay);
+  }
+  tick();
+
+  return {
+    parar(nombreFinal) { final = nombreFinal; return terminado; },
+    cancelar(texto) {
+      cancelado = true;
+      ruleta.classList.remove("girando");
+      nombreActual.textContent = texto;
+    },
+  };
+}
+
+function bloquear() {
+  cerrarLista();
+  selectorBoton.disabled = true;
+  btnSortear.disabled = true;
+}
+
+// ---------- Menú de nombres ----------
+function armarLista() {
+  selectorLista.innerHTML = "";
+  participantes.forEach((n, i) => {
+    const li = document.createElement("li");
+    li.setAttribute("role", "presentation");
+    const op = document.createElement("button");
+    op.type = "button";
+    op.className = "opcion";
+    op.setAttribute("role", "option");
+    op.setAttribute("aria-selected", "false");
+    op.dataset.nombre = n;
+    op.style.setProperty("--c", colorDe(n));
+    op.style.setProperty("--i", i);
+    op.innerHTML = '<span class="inicial"></span><span></span>';
+    op.firstChild.textContent = n.charAt(0).toUpperCase();
+    op.lastChild.textContent = n;
+    op.addEventListener("click", () => elegir(n, true));
+    li.appendChild(op);
+    selectorLista.appendChild(li);
+  });
+}
+
+function opciones() {
+  return [...selectorLista.querySelectorAll(".opcion")];
+}
+
+function abrirLista() {
+  if (selectorBoton.disabled) return;
+  selectorLista.hidden = false;
+  selector.classList.add("abierto");
+  selectorBoton.setAttribute("aria-expanded", "true");
+  // Reinicia la animación de entrada de cada nombre
+  opciones().forEach(op => { op.style.animation = "none"; void op.offsetWidth; op.style.animation = ""; });
+  const actual = opciones().find(op => op.dataset.nombre === quienElegido) || opciones()[0];
+  if (actual) actual.focus({ preventScroll: true });
+}
+
+function cerrarLista(volverAlBoton = false) {
+  if (selectorLista.hidden) return;
+  selectorLista.hidden = true;
+  selector.classList.remove("abierto");
+  selectorBoton.setAttribute("aria-expanded", "false");
+  if (volverAlBoton) selectorBoton.focus();
+}
+
+function elegir(nombre, desdeLista = false) {
+  quienElegido = nombre;
+  const color = colorDe(nombre);
+  selectorTexto.textContent = nombre;
+  selectorInicial.textContent = nombre.charAt(0).toUpperCase();
+  selectorInicial.classList.remove("oculto");
+  selectorBoton.style.setProperty("--c", color);
+  selectorBoton.classList.add("elegido");
+  opciones().forEach(op => op.setAttribute("aria-selected", String(op.dataset.nombre === nombre)));
+  if (mensaje.classList.contains("error")) mostrarMensaje("");
+  cerrarLista(desdeLista);
+}
+
+selectorBoton.addEventListener("click", () => {
+  if (selectorLista.hidden) abrirLista();
+  else cerrarLista();
+});
+
+selectorBoton.addEventListener("keydown", e => {
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    abrirLista();
+  }
+});
+
+selectorLista.addEventListener("keydown", e => {
+  const ops = opciones();
+  const i = ops.indexOf(document.activeElement);
+  if (e.key === "ArrowDown") { e.preventDefault(); ops[(i + 1) % ops.length].focus(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); ops[(i - 1 + ops.length) % ops.length].focus(); }
+  else if (e.key === "Home") { e.preventDefault(); ops[0].focus(); }
+  else if (e.key === "End") { e.preventDefault(); ops[ops.length - 1].focus(); }
+  else if (e.key === "Escape" || e.key === "Tab") { cerrarLista(e.key === "Escape"); }
+});
+
+document.addEventListener("click", e => {
+  if (!selector.contains(e.target)) cerrarLista();
+});
+
+// ---------- Sorteo ----------
+async function sortear() {
+  const quien = quienElegido;
+  if (!quien) {
+    mostrarMensaje("Primero elegí tu nombre 👆", true);
+    return;
+  }
+  bloquear();
+  mostrarMensaje("");
+
+  const otros = participantes.filter(n => n !== quien);
+  const giro = girar(otros.length ? otros : participantes);
+
+  try {
+    const res = await api({ accion: "sortear", nombre: quien });
+    if (!res.ok) throw new Error(res.error || "Algo salió mal");
+
+    if (res.yaSorteo) {
+      giro.cancelar("🤔");
+      mostrarMensaje(`${quien}, vos ya hiciste tu sorteo. Si no fuiste vos, avisale al organizador.`, true);
+      return;
+    }
+
+    await giro.parar(res.teToca);
+    guardarResultado(quien, res.teToca);
+    mostrarMensaje(`¡${quien}, te toca regalarle a ${res.teToca}! 🤫 No le digas a nadie.`);
+    lanzarConfeti();
+  } catch (err) {
+    giro.cancelar("😕");
+    mostrarMensaje("No se pudo sortear: " + err.message + ". Probá de nuevo.", true);
+    selectorBoton.disabled = false;
+    btnSortear.disabled = false;
+  }
+}
+
+// ---------- Efectos ----------
+function lanzarConfeti() {
+  const colores = ["#c8102e", "#1e7a46", "#f4c542", "#ffffff"];
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement("div");
+    c.className = "confeti";
+    c.style.left = Math.random() * 100 + "vw";
+    c.style.background = aleatorio(colores);
+    c.style.animationDelay = Math.random() * 0.6 + "s";
+    c.style.animationDuration = 2 + Math.random() * 1.5 + "s";
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 4500);
+  }
+}
+
+function crearNieve() {
+  const fondo = document.getElementById("fondo");
+  for (let i = 0; i < 40; i++) {
+    const copo = document.createElement("span");
+    copo.className = "copo";
+    copo.textContent = "❄";
+    copo.style.left = Math.random() * 100 + "vw";
+    copo.style.fontSize = 8 + Math.random() * 14 + "px";
+    copo.style.animationDuration = 6 + Math.random() * 10 + "s";
+    copo.style.animationDelay = -Math.random() * 16 + "s";
+    fondo.appendChild(copo);
+  }
+}
+
+// ---------- Inicio ----------
+async function iniciar() {
+  crearNieve();
+  avisoDemo.classList.toggle("oculto", !MODO_DEMO);
+
+  // Si este dispositivo ya sorteó, mostrar el resultado directamente
+  const previo = leerResultado();
+
+  try {
+    const res = await api({ accion: "participantes" });
+    if (!res.ok) throw new Error(res.error);
+    participantes = res.participantes;
+  } catch (err) {
+    selectorTexto.textContent = "No se pudo cargar";
+    mostrarMensaje("No se pudo conectar con el sorteo. Recargá la página.", true);
+    return;
+  }
+
+  selectorTexto.textContent = "Elegí tu nombre";
+  armarLista();
+
+  if (previo && participantes.includes(previo.nombre)) {
+    elegir(previo.nombre);
+    mostrarGanador(previo.teToca);
+    mostrarMensaje(`${previo.nombre}, ya sorteaste: te toca ${previo.teToca} 🎁`);
+    bloquear();
+    return;
+  }
+
+  selectorBoton.disabled = false;
+  btnSortear.disabled = false;
+}
+
+btnSortear.addEventListener("click", sortear);
+iniciar();
+</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>// =====================================================
+// MINI SANTA 3D (Three.js)
+// Un Santa petiso y cabezón que vive abajo de la tarjeta: mira para arriba,
+// salta, se agarra del borde de la tarjeta, patalea colgado, se resbala,
+// se cae de cola, queda mareado con estrellitas y se vuelve a levantar.
+// Tocalo para que salte enseguida.
+// Si el navegador no soporta 3D, queda el Santa plano (SVG) de respaldo.
+// =====================================================
+(function () {
+  const contenedor = document.querySelector(".santa-baile");
+  const tarjeta = document.querySelector(".tarjeta-sorteo");
+  if (!contenedor || !tarjeta || typeof THREE === "undefined") return;
+
+  // ¿Hay WebGL?
+  try {
+    const prueba = document.createElement("canvas");
+    if (!(prueba.getContext("webgl") || prueba.getContext("experimental-webgl"))) return;
+  } catch (e) { return; }
+
+  const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const PI = Math.PI;
+
+  // ---------- Escena ----------
+  const canvas = document.createElement("canvas");
+  canvas.className = "santa-3d";
+  canvas.setAttribute("aria-hidden", "true");
+  contenedor.appendChild(canvas);
+  contenedor.classList.add("con-3d");
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.localClippingEnabled = true;
+
+  const escena = new THREE.Scene();
+  const camara = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
+  const PIXELES_POR_UNIDAD = 70;   // tamaño del Santa en pantalla
+
+  escena.add(new THREE.HemisphereLight(0xfff4e0, 0x203040, 0.65));
+  const sol = new THREE.DirectionalLight(0xffffff, 0.7);
+  sol.position.set(2, 4, 3);
+  escena.add(sol);
+  const relleno = new THREE.DirectionalLight(0xffe6f0, 0.25);
+  relleno.position.set(-2, 1, 3);
+  escena.add(relleno);
+
+  // Todo lo que pase por encima del borde de la tarjeta queda "detrás" de ella
+  // (se recorta). Los guantes no se recortan: así se ven agarrando el borde.
+  const borde = new THREE.Plane(new THREE.Vector3(0, -1, 0), 100);
+
+  // ---------- Materiales ----------
+  const mat = c => new THREE.MeshToonMaterial({ color: c, clippingPlanes: [borde] });
+  const rojo = mat(0xe01b34);
+  const rojoOscuro = mat(0xa8102a);
+  const blanco = mat(0xffffff);
+  const piel = mat(0xffcfae);
+  const negro = mat(0x1e1e24);
+  const dorado = mat(0xffc93c);
+  const naricita = mat(0xff9e86);
+  const rosa = new THREE.MeshToonMaterial({ color: 0xff8a9a, transparent: true, opacity: 0.7, clippingPlanes: [borde] });
+  const verde = new THREE.MeshToonMaterial({ color: 0x1e9a55 });   // guantes: sin recorte
+
+  const esfera = (r, m, seg = 24) => new THREE.Mesh(new THREE.SphereGeometry(r, seg, Math.round(seg * 0.75)), m);
+
+  // ---------- Sombra en el piso ----------
+  const sombraTex = (() => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    const g = c.getContext("2d");
+    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, "rgba(0,0,0,0.5)");
+    grad.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  const sombra = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.2, 1.2),
+    new THREE.MeshBasicMaterial({ map: sombraTex, transparent: true, depthWrite: false })
+  );
+  sombra.rotation.x = -PI / 2;
+  escena.add(sombra);
+
+  // ---------- Mini Santa ----------
+  // santa (posición) > colgador (pivote en las manos, para balancearse colgado) > cuerpo (origen en los pies)
+  const ALTURA_MANOS = 1.2;            // altura de los guantes con los brazos arriba
+  const santa = new THREE.Group();
+  const colgador = new THREE.Group();
+  colgador.position.y = ALTURA_MANOS;
+  const cuerpo = new THREE.Group();
+  cuerpo.position.y = -ALTURA_MANOS;
+  santa.add(colgador);
+  colgador.add(cuerpo);
+  escena.add(santa);
+
+  // Piernas (cortitas)
+  function pierna(lado) {
+    const g = new THREE.Group();
+    g.position.set(0.17 * lado, 0.36, 0);
+    const muslo = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.26, 16), rojoOscuro);
+    muslo.position.y = -0.13;
+    const bota = esfera(0.14, negro);
+    bota.scale.set(1, 0.65, 1.45);
+    bota.position.set(0, -0.28, 0.06);
+    g.add(muslo, bota);
+    cuerpo.add(g);
+    return g;
+  }
+  const piernaIzq = pierna(-1);
+  const piernaDer = pierna(1);
+
+  // Cadera: todo lo de arriba cuelga de acá
+  const cadera = new THREE.Group();
+  cadera.position.y = 0.36;
+  cuerpo.add(cadera);
+
+  // Panza
+  const panza = esfera(0.42, rojo, 32);
+  panza.scale.set(1.05, 0.95, 1);
+  panza.position.y = 0.3;
+  const ruedo = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.075, 12, 40), blanco);
+  ruedo.rotation.x = PI / 2;
+  ruedo.position.y = 0.04;
+  const cinturon = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.045, 10, 40), negro);
+  cinturon.rotation.x = PI / 2;
+  cinturon.position.y = 0.24;
+  const hebilla = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.12, 0.05), dorado);
+  hebilla.position.set(0, 0.24, 0.45);
+  const botones = [0.4, 0.52].map(y => {
+    const b = esfera(0.035, blanco, 12);
+    b.position.set(0, y, 0.4 - (y - 0.4) * 0.6);
+    return b;
+  });
+  const colita = esfera(0.09, blanco, 16);
+  colita.position.set(0, 0.12, -0.38);
+  cadera.add(panza, ruedo, cinturon, hebilla, colita, ...botones);
+
+  // Brazos
+  function brazo(lado) {
+    const hombro = new THREE.Group();
+    hombro.position.set(0.36 * lado, 0.47, 0);
+    const manga = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.3, 14), rojo);
+    manga.position.y = -0.15;
+    const puno = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.035, 8, 20), blanco);
+    puno.rotation.x = PI / 2;
+    puno.position.y = -0.3;
+    const guante = esfera(0.1, verde, 16);
+    guante.position.y = -0.38;
+    hombro.add(manga, puno, guante);
+    cadera.add(hombro);
+    return hombro;
+  }
+  const brazoIzq = brazo(-1);
+  const brazoDer = brazo(1);
+
+  // Cabeza (bien grande, estilo chibi)
+  const cabeza = new THREE.Group();
+  cabeza.position.y = 0.72;
+  cadera.add(cabeza);
+
+  const cara = esfera(0.4, piel, 32);
+  cara.position.y = 0.32;
+  const barba = esfera(0.36, blanco, 28);
+  barba.scale.set(1.05, 0.85, 0.8);
+  barba.position.set(0, -0.02, 0.1);
+  const bigoteIzq = esfera(0.1, blanco, 16);
+  bigoteIzq.scale.set(1.5, 0.75, 0.9);
+  bigoteIzq.position.set(-0.1, 0.25, 0.37);
+  bigoteIzq.rotation.z = 0.35;
+  const bigoteDer = bigoteIzq.clone();
+  bigoteDer.position.x = 0.1;
+  bigoteDer.rotation.z = -0.35;
+  const nariz = esfera(0.065, naricita, 16);
+  nariz.position.set(0, 0.31, 0.41);
+  const mejillaIzq = esfera(0.07, rosa, 12);
+  mejillaIzq.scale.set(1, 0.6, 0.4);
+  mejillaIzq.position.set(-0.22, 0.32, 0.31);
+  const mejillaDer = mejillaIzq.clone();
+  mejillaDer.position.x = 0.22;
+
+  function ojo(x) {
+    const g = new THREE.Group();
+    g.position.set(x, 0.43, 0.35);
+    const o = esfera(0.055, negro, 16);
+    o.scale.set(0.85, 1.15, 0.6);
+    const brillo = esfera(0.018, blanco, 8);
+    brillo.position.set(0.018, 0.025, 0.03);
+    g.add(o, brillo);
+    return g;
+  }
+  const ojoIzq = ojo(-0.13);
+  const ojoDer = ojo(0.13);
+  const cejaIzq = esfera(0.05, blanco, 12);
+  cejaIzq.scale.set(1.3, 0.45, 0.5);
+  cejaIzq.rotation.z = 0.25;
+  cejaIzq.position.set(-0.13, 0.53, 0.34);
+  const cejaDer = cejaIzq.clone();
+  cejaDer.rotation.z = -0.25;
+  cejaDer.position.x = 0.13;
+  cabeza.add(cara, barba, bigoteIzq, bigoteDer, nariz, mejillaIzq, mejillaDer, ojoIzq, ojoDer, cejaIzq, cejaDer);
+
+  // Gorro con punta que se bambolea
+  const gorro = new THREE.Group();
+  gorro.position.y = 0.55;
+  gorro.rotation.z = -0.12;
+  cabeza.add(gorro);
+  const banda = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.085, 12, 40), blanco);
+  banda.rotation.x = PI / 2;
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.37, 0.25, 28), rojo);
+  base.position.y = 0.12;
+  const punta = new THREE.Group();
+  punta.position.y = 0.24;
+  const cono = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.45, 24), rojo);
+  cono.position.y = 0.2;
+  const bolita = esfera(0.085, blanco, 16);
+  bolita.position.y = 0.44;
+  punta.add(cono, bolita);
+  gorro.add(banda, base, punta);
+
+  // Estrellitas de mareo
+  const formaEstrella = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? 0.09 : 0.04;
+    const a = (i / 10) * PI * 2 - PI / 2;
+    if (i === 0) formaEstrella.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+    else formaEstrella.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  const geoEstrella = new THREE.ShapeGeometry(formaEstrella);
+  const estrellas = [0xffd23d, 0xfff3a0, 0xffb627].map(c => {
+    const e = new THREE.Mesh(geoEstrella, new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide, transparent: true }));
+    escena.add(e);
+    return e;
+  });
+
+  // ---------- Medidas: dónde está el borde de la tarjeta y dónde el piso ----------
+  const v = new THREE.Vector3();
+  let altoCanvas = 380;
+  function filaAMundoY(fila) {
+    // Convierte una fila de píxeles del lienzo en altura del mundo 3D (en el plano del Santa)
+    v.set(0, 1 - (2 * fila) / altoCanvas, 0.5).unproject(camara);
+    v.sub(camara.position).normalize();
+    const t = -camara.position.z / v.z;
+    return camara.position.y + v.y * t;
+  }
+
+  function ajustar() {
+    const w = canvas.clientWidth || 360;
+    altoCanvas = canvas.clientHeight || 380;
+    renderer.setSize(w, altoCanvas, false);
+    camara.aspect = w / altoCanvas;
+    const distancia = altoCanvas / PIXELES_POR_UNIDAD / (2 * Math.tan((camara.fov * PI) / 360));
+    camara.position.set(0, 1, distancia);
+    camara.lookAt(0, 0.3, 0);
+    camara.updateProjectionMatrix();
+    camara.updateMatrixWorld();
+  }
+  ajustar();
+  window.addEventListener("resize", ajustar);
+
+  let pisoY = 0;
+  let bordeY = 3;
+  function medir() {
+    const rc = canvas.getBoundingClientRect();
+    const rt = tarjeta.getBoundingClientRect();
+    pisoY = filaAMundoY(altoCanvas - 26);
+    bordeY = filaAMundoY(rt.bottom - rc.top - 2);
+    borde.constant = bordeY;
+  }
+
+  // ---------- Animación: salta, se agarra, se cae ----------
+  const reloj = new THREE.Clock();
+  const CICLO = 10;                 // segundos que dura toda la escena
+  const T = {                       // momentos de cada parte
+    mira: 0, agacha: 2.6, salta: 2.95, agarra: 3.4, cuelga: 3.55,
+    resbala: 5.9, cae: 6.35, golpe: 6.85, mareado: 7.15, levanta: 8.6, sacude: 9.2,
+  };
+  let inicio = 0;
+
+  // Tocalo: si está esperando, salta ya
+  contenedor.addEventListener("click", () => {
+    const c = (reloj.getElapsedTime() - inicio) % CICLO;
+    if (c < T.agacha) inicio = reloj.getElapsedTime() - T.agacha;
+  });
+
+  const clamp01 = x => Math.min(1, Math.max(0, x));
+  const salida = k => 1 - (1 - k) * (1 - k);     // rápido al principio, frena al final
+  const entrada = k => k * k;                     // arranca lento y acelera (caída)
+  const lomo = (u, desde, dura, alto) => (u > desde && u < desde + dura ? Math.sin(((u - desde) / dura) * PI) * alto : 0);
+  const prog = (c, a, b) => clamp01((c - a) / (b - a));
+
+  const NEUTRO = {
+    giro: 0, colgZ: 0, colgX: 0, cX: 0, cZ: 0, hX: 0, hZ: 0,
+    aIX: 0, aIZ: -0.25, aDX: 0, aDZ: 0.25,
+    pIX: 0, pIZ: -0.08, pDX: 0, pDZ: 0.08,
+    ojos: 1, estrellas: 0,
+  };
+  const actual = Object.assign({}, NEUTRO);
+  const SENTADO = -0.24;           // altura del cuerpo sentado de cola en el piso
+  const BRAZOS_ARRIBA = 2.95;
+
+  function escenaEn(c, alturaColgado) {
+    // Devuelve la pose objetivo, la altura (y) y el aplastado para el momento c del ciclo
+    const p = Object.assign({}, NEUTRO);
+    let y = 0, aplaste = 0, rapido = false;
+
+    if (c < T.agacha) {
+      // Mira la tarjeta, respira y da saltitos de ganas
+      p.hX = -0.38;
+      aplaste = Math.sin(c * 4) * 0.015;
+      y = lomo(c, 1.2, 0.3, 0.07) + lomo(c, 1.55, 0.3, 0.07);
+      p.aIZ = -0.35; p.aDZ = 0.35;
+    } else if (c < T.salta) {
+      // Se agacha para tomar impulso
+      const k = salida(prog(c, T.agacha, T.salta));
+      aplaste = 0.2 * k;
+      p.cX = 0.25; p.hX = -0.45;
+      p.aIX = 0.7; p.aDX = 0.7; p.aIZ = -0.4; p.aDZ = 0.4;
+      p.pIZ = -0.16; p.pDZ = 0.16;
+      rapido = true;
+    } else if (c < T.agarra) {
+      // ¡Salta!
+      const k = prog(c, T.salta, T.agarra);
+      y = alturaColgado * salida(k);
+      aplaste = -0.14 * (1 - k);
+      p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = 0.35; p.pDX = 0.2; p.hX = -0.3;
+      rapido = true;
+    } else if (c < T.cuelga) {
+      // Se agarra con un tironcito
+      const k = prog(c, T.agarra, T.cuelga);
+      y = alturaColgado - Math.sin(k * PI) * 0.06;
+      p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = -0.3; p.pDX = 0.3;
+      rapido = true;
+    } else if (c < T.resbala) {
+      // Colgado: patalea, se balancea e intenta subir dos veces
+      const u = c - T.cuelga;
+      y = alturaColgado + lomo(u, 0.7, 0.55, 0.1) + lomo(u, 1.6, 0.55, 0.12);
+      p.colgZ = Math.sin(u * 3.2) * 0.1;
+      p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = Math.sin(u * 12) * 0.55; p.pDX = -Math.sin(u * 12) * 0.55;
+      p.pIZ = -0.12; p.pDZ = 0.12;
+      p.hX = 0.12;
+    } else if (c < T.cae) {
+      // Se le resbala una mano y manotea
+      const k = prog(c, T.resbala, T.cae);
+      y = alturaColgado - 0.05 * k;
+      p.colgZ = -0.32 * salida(k) + Math.sin(c * 22) * 0.04;
+      p.aIZ = -1.4 + Math.sin(c * 30) * 0.5; p.aIX = Math.sin(c * 26) * 0.4;
+      p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = Math.sin(c * 18) * 0.7; p.pDX = -Math.sin(c * 18) * 0.7;
+      p.ojos = 1.35;
+      rapido = true;
+    } else if (c < T.golpe) {
+      // Se cae
+      const k = prog(c, T.cae, T.golpe);
+      y = alturaColgado - 0.05 + (SENTADO - alturaColgado + 0.05) * entrada(k);
+      p.colgX = -0.25;
+      p.aIZ = -2.4 + Math.sin(c * 25) * 0.45; p.aDZ = 2.4 + Math.sin(c * 25 + 1.3) * 0.45;
+      p.pIX = -1.2; p.pDX = -1.0;
+      p.ojos = 1.4;
+      rapido = true;
+    } else if (c < T.mareado) {
+      // ¡Pum! Cae de cola
+      const k = prog(c, T.golpe, T.mareado);
+      y = SENTADO + Math.sin(k * PI) * 0.09;
+      aplaste = 0.22 * (1 - k);
+      p.cX = -0.15;
+      p.aIZ = -0.9; p.aDZ = 0.9;
+      p.pIX = -1.45; p.pDX = -1.45; p.pIZ = -0.2; p.pDZ = 0.2;
+      p.ojos = 0.3;
+      rapido = true;
+    } else if (c < T.levanta) {
+      // Mareado, con estrellitas girando
+      y = SENTADO;
+      p.cX = -0.15; p.cZ = Math.sin(c * 7 + 1) * 0.08;
+      p.hZ = Math.sin(c * 7) * 0.22; p.hX = Math.cos(c * 7) * 0.12;
+      p.aIZ = -0.9; p.aDZ = 0.9;
+      p.pIX = -1.45; p.pDX = -1.45; p.pIZ = -0.2; p.pDZ = 0.2;
+      p.ojos = 0.3;
+      p.estrellas = 1;
+    } else if (c < T.sacude) {
+      // Se levanta
+      const k = prog(c, T.levanta, T.sacude);
+      y = SENTADO + (0 - SENTADO) * salida(k) + lomo(k, 0.4, 0.6, 0.05);
+      p.cX = 0.15 * (1 - k);
+      p.aIZ = -0.6; p.aDZ = 0.6;
+      p.ojos = 0.8;
+    } else {
+      // Se sacude y vuelve a mirar la tarjeta
+      const u = c - T.sacude;
+      const fuerza = Math.max(0, 1 - u / 0.6);
+      p.giro = Math.sin(u * 28) * 0.3 * fuerza;
+      p.hZ = Math.sin(u * 28 + 1) * 0.15 * fuerza;
+      p.hX = -0.38 * clamp01(u / 0.6);
+      p.aIZ = -0.45; p.aDZ = 0.45;
+    }
+    return { p, y, aplaste, rapido };
+  }
+
+  function animar(t, dt) {
+    medir();
+    const alturaColgado = bordeY - 0.03 - ALTURA_MANOS - pisoY;   // cuánto sube hasta agarrarse
+    const c = (t - inicio) % CICLO;
+    const { p: objetivo, y, aplaste, rapido } = escenaEn(c, alturaColgado);
+
+    // Pasar suave a la pose (más rápido en los momentos bruscos)
+    const k = dt === 0 ? 1 : 1 - Math.exp(-dt * (rapido ? 24 : 11));
+    for (const clave in objetivo) actual[clave] += (objetivo[clave] - actual[clave]) * k;
+    const p = actual;
+
+    santa.position.set(0, pisoY + y, 0);
+    santa.rotation.y = p.giro;
+    colgador.rotation.set(p.colgX, 0, p.colgZ);
+    cuerpo.scale.set(1 + aplaste * 0.6, 1 - aplaste, 1 + aplaste * 0.6);
+    cadera.rotation.set(p.cX, 0, p.cZ);
+    cabeza.rotation.set(p.hX, 0, p.hZ);
+    brazoIzq.rotation.set(p.aIX, 0, p.aIZ);
+    brazoDer.rotation.set(p.aDX, 0, p.aDZ);
+    piernaIzq.rotation.set(p.pIX, 0, p.pIZ);
+    piernaDer.rotation.set(p.pDX, 0, p.pDZ);
+
+    // Ojos: parpadeo, ojos grandes del susto, ojos chiquitos de mareo
+    const parpadeo = (t % 3.2) < 0.12 ? 0.15 : 1;
+    [ojoIzq, ojoDer].forEach(o => o.scale.set(p.ojos, p.ojos * parpadeo, p.ojos));
+
+    // Punta del gorro
+    punta.rotation.z = Math.sin(t * 3) * 0.25 - 0.3;
+    punta.rotation.x = Math.cos(t * 3) * 0.12;
+
+    // Estrellitas girando arriba de la cabeza
+    cabeza.getWorldPosition(v);
+    estrellas.forEach((e, i) => {
+      const a = t * 4 + (i * PI * 2) / estrellas.length;
+      e.position.set(v.x + Math.cos(a) * 0.5, v.y + 0.62 + Math.sin(a * 2) * 0.04, v.z + Math.sin(a) * 0.35);
+      e.lookAt(camara.position);
+      e.rotation.z += t * 3;
+      e.material.opacity = p.estrellas;
+      e.visible = p.estrellas > 0.05;
+    });
+
+    // Sombra en el piso: más chica y suave cuanto más alto está
+    sombra.position.set(santa.position.x, pisoY + 0.002, 0);
+    const s = Math.max(0.25, 1 - Math.max(0, y) * 0.35);
+    sombra.scale.set(s, s, s);
+    sombra.material.opacity = Math.max(0.25, 1 - Math.max(0, y) * 0.3);
+  }
+
+  // ---------- Bucle (solo cuando se ve) ----------
+  let visible = true;
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(entradas => { visible = entradas[0].isIntersecting; }).observe(contenedor);
+  }
+
+  let anterior = 0;
+  function cuadro() {
+    requestAnimationFrame(cuadro);
+    if (!visible || document.hidden) return;
+    const t = reloj.getElapsedTime();
+    const dt = Math.min(t - anterior, 0.05);
+    anterior = t;
+    animar(t, dt);
+    renderer.render(escena, camara);
+  }
+
+  if (quieto) {
+    animar(0.5, 0);
+    renderer.render(escena, camara);
+  } else {
+    cuadro();
+  }
+})();
+</script>
+</body>
+</html>
