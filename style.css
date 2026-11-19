@@ -110,7 +110,6 @@ h1 {
 .selector-boton:active:not(:disabled) { transform: translateY(2px); }
 .selector-boton:disabled { cursor: wait; opacity: 0.75; }
 .selector-boton.elegido { background: color-mix(in srgb, var(--c) 10%, #fff); }
-.selector-boton.elegido::after { animation-duration: 2.8s; }
 
 .selector-texto { flex: 1; }
 .selector-flecha {
@@ -185,47 +184,19 @@ h1 {
   to { opacity: 1; transform: none; }
 }
 
-/* Barrido de luz (del color de cada nombre) */
-.opcion::after,
-.selector-boton.elegido::after {
-  content: "";
-  position: absolute;
-  top: -20%;
-  bottom: -20%;
-  left: -45%;
-  width: 40%;
-  pointer-events: none;
-  background: linear-gradient(100deg,
-    transparent 0%,
-    color-mix(in srgb, var(--c) 70%, transparent) 45%,
-    rgba(255, 255, 255, 0.85) 50%,
-    color-mix(in srgb, var(--c) 70%, transparent) 55%,
-    transparent 100%);
-  transform: skewX(-18deg);
-  mix-blend-mode: screen;
-  animation: barrido 2.2s ease-in-out infinite;
-  animation-delay: calc(var(--i, 0) * 0.18s);
-}
-.selector-boton.elegido::after { mix-blend-mode: normal; opacity: 0.55; }
-@keyframes barrido {
-  0% { left: -45%; }
-  55%, 100% { left: 120%; }
-}
-
-.inicial {
+/* Foto de perfil (duende) con aro del color de cada nombre */
+.avatar {
   flex: none;
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  font-size: 1rem;
-  font-weight: 800;
-  color: #1a0f0a;
-  background: var(--c);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 80%, transparent);
+  object-fit: cover;
+  background: #1a0f0a;
+  border: 2px solid var(--c);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent);
 }
-.inicial.oculto { display: none; }
+.selector-boton .avatar { width: 38px; height: 38px; }
+.avatar.oculto { display: none; }
 
 /* Botones */
 .btn {
@@ -351,8 +322,7 @@ h1 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .santa, .ojo,
-  .opcion::after, .selector-boton.elegido::after { animation: none; }
+  .santa, .ojo { animation: none; }
   .opcion { opacity: 1; animation: none; }
 }
 

@@ -12,7 +12,7 @@ const CLAVE_RESULTADO = "amigo-invisible-resultado";
 const selector = document.getElementById("selector");
 const selectorBoton = document.getElementById("selector-boton");
 const selectorTexto = document.getElementById("selector-texto");
-const selectorInicial = document.getElementById("selector-inicial");
+const selectorAvatar = document.getElementById("selector-avatar");
 const selectorLista = document.getElementById("selector-lista");
 const ruleta = document.getElementById("ruleta");
 const nombreActual = document.getElementById("nombre-actual");
@@ -31,6 +31,13 @@ const COLORES_NOMBRES = [
 function colorDe(nombre) {
   const i = participantes.indexOf(nombre);
   return COLORES_NOMBRES[(i < 0 ? 0 : i) % COLORES_NOMBRES.length];
+}
+
+// Foto de perfil de cada participante: los de esta lista usan el duende hombre,
+// el resto la duende mujer.
+const DUENDE_HOMBRE = ["Fernando", "Nacho", "Ezequiel", "Charli"];
+function fotoDe(nombre) {
+  return DUENDE_HOMBRE.includes(nombre) ? "img/duende-hombre.jpg" : "img/duende-mujer.jpg";
 }
 
 // ---------- Comunicación con el Apps Script ----------
@@ -149,9 +156,14 @@ function armarLista() {
     op.dataset.nombre = n;
     op.style.setProperty("--c", colorDe(n));
     op.style.setProperty("--i", i);
-    op.innerHTML = '<span class="inicial"></span><span></span>';
-    op.firstChild.textContent = n.charAt(0).toUpperCase();
-    op.lastChild.textContent = n;
+    const foto = document.createElement("img");
+    foto.className = "avatar";
+    foto.alt = "";
+    foto.width = foto.height = 42;
+    foto.src = fotoDe(n);
+    const texto = document.createElement("span");
+    texto.textContent = n;
+    op.append(foto, texto);
     op.addEventListener("click", () => elegir(n, true));
     li.appendChild(op);
     selectorLista.appendChild(li);
@@ -185,8 +197,8 @@ function elegir(nombre, desdeLista = false) {
   quienElegido = nombre;
   const color = colorDe(nombre);
   selectorTexto.textContent = nombre;
-  selectorInicial.textContent = nombre.charAt(0).toUpperCase();
-  selectorInicial.classList.remove("oculto");
+  selectorAvatar.src = fotoDe(nombre);
+  selectorAvatar.classList.remove("oculto");
   selectorBoton.style.setProperty("--c", color);
   selectorBoton.classList.add("elegido");
   opciones().forEach(op => op.setAttribute("aria-selected", String(op.dataset.nombre === nombre)));
