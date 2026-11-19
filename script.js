@@ -62,11 +62,14 @@ function decorarNombre(barra, nombre, dondeCorazon) {
   dondeCorazon.append(svg);
 }
 
-// Foto de perfil de cada participante: los de esta lista usan el duende hombre,
-// el resto la duende mujer.
-const DUENDE_HOMBRE = ["Fernando", "Nacho", "Ezequiel", "Charli"];
+// Foto de perfil de cada participante: Fernando y Juani tienen su duende;
+// todos los demás, el sombrero de duende.
+const FOTOS = {
+  Fernando: "img/duende-hombre.jpg",
+  Juani: "img/duende-mujer.jpg",
+};
 function fotoDe(nombre) {
-  return DUENDE_HOMBRE.includes(nombre) ? "img/duende-hombre.jpg" : "img/duende-mujer.jpg";
+  return FOTOS[nombre] || "img/sombrero.jpg";
 }
 
 // ---------- Comunicación con el Apps Script ----------
@@ -236,7 +239,7 @@ function armarLista() {
     texto.textContent = n;
     op.append(foto, texto);
     decorarNombre(op, n, op);
-    op.addEventListener("click", () => elegir(n, true));
+    op.addEventListener("click", () => pedirConfirmacion(n));
     li.appendChild(op);
     selectorLista.appendChild(li);
   });
@@ -278,6 +281,38 @@ function elegir(nombre, desdeLista = false) {
   if (mensaje.classList.contains("error")) mostrarMensaje("");
   cerrarLista(desdeLista);
 }
+
+// ---------- Confirmación: "¿Sos vos?" ----------
+const confirmar = document.getElementById("confirmar");
+const confirmarFoto = document.getElementById("confirmar-foto");
+const confirmarNombre = document.getElementById("confirmar-nombre");
+let nombrePendiente = "";
+
+function pedirConfirmacion(nombre) {
+  if (typeof confirmar.showModal !== "function") { // navegador muy viejo: elige directo
+    elegir(nombre, true);
+    return;
+  }
+  nombrePendiente = nombre;
+  cerrarLista();
+  confirmar.style.setProperty("--c", colorDe(nombre));
+  confirmarFoto.src = fotoDe(nombre);
+  confirmarNombre.textContent = nombre;
+  decorarNombre(confirmar, nombre, confirmarNombre);
+  confirmar.showModal();
+  document.getElementById("confirmar-si").focus();
+}
+
+document.getElementById("confirmar-si").addEventListener("click", () => {
+  confirmar.close();
+  elegir(nombrePendiente);
+  selectorBoton.focus();
+});
+document.getElementById("confirmar-no").addEventListener("click", () => {
+  confirmar.close();
+  abrirLista();
+});
+confirmar.addEventListener("click", e => { if (e.target === confirmar) confirmar.close(); });
 
 selectorBoton.addEventListener("click", () => {
   if (selectorLista.hidden) abrirLista();

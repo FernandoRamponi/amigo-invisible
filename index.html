@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Amigo Invisible</title>
-  <link rel="stylesheet" href="style.css?v=2026111910341">
+  <link rel="icon" type="image/svg+xml" href="img/regalo.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css?v=202611191043">
 </head>
 <body>
   <!-- Fondo: copos de nieve -->
@@ -143,6 +146,20 @@
       Modo prueba: nombres de ejemplo, no se manda ningún mail y nada de esto toca el sorteo real.
     </p>
   </main>
+
+  <!-- Confirmación al elegir un nombre -->
+  <dialog id="confirmar" class="confirmar" aria-labelledby="confirmar-titulo">
+    <div class="confirmar-tarjeta">
+      <img id="confirmar-foto" class="avatar confirmar-foto" alt="" width="96" height="96">
+      <p id="confirmar-titulo" class="confirmar-titulo">¿Sos vos?</p>
+      <p id="confirmar-nombre" class="confirmar-nombre"></p>
+      <p class="confirmar-texto">Elegí solo tu propio nombre: si sorteás con el de otra persona, le arruinás el sorteo.</p>
+      <div class="confirmar-botones">
+        <button type="button" id="confirmar-no" class="btn confirmar-no">No, cambiar</button>
+        <button type="button" id="confirmar-si" class="btn confirmar-si">Sí, soy yo</button>
+      </div>
+    </div>
+  </dialog>
 
   <!-- Ventana de admin: entrar, crear/cambiar contraseña con código por mail, y panel -->
   <dialog id="admin" class="admin" aria-labelledby="admin-titulo">
@@ -328,9 +345,9 @@
     </div>
   </dialog>
 
-  <script src="script.js?v=2026111910341"></script>
-  <script src="admin.js?v=2026111910341"></script>
+  <script src="script.js?v=202611191043"></script>
+  <script src="admin.js?v=202611191043"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="santa3d.js?v=2026111910341"></script>
+  <script src="santa3d.js?v=202611191043"></script>
 </body>
 </html>
