@@ -1612,8 +1612,8 @@ iniciar();
   function cuadro() {
     requestAnimationFrame(cuadro);
     if (!visible || document.hidden) return;
-    const t = reloj.getElapsedTime();
-    const dt = Math.min(t - anterior, 0.05);
+    const t = typeof window.__santaT === "number" ? window.__santaT : reloj.getElapsedTime();   // PRUEBA
+    const dt = Math.min(Math.max(t - anterior, 0), 0.05);
     anterior = t;
     animar(t, dt);
     renderer.render(escena, camara);
