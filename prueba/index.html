@@ -865,8 +865,16 @@ body:has(.admin[open]) { overflow: hidden; }
 .chip .ico { width: 14px; height: 14px; stroke-width: 2.2; }
 .chip-ok { color: var(--a-verde); background: rgba(67, 227, 150, 0.12); border: 1px solid rgba(67, 227, 150, 0.3); }
 .chip-pend { color: var(--a-ambar); background: rgba(255, 200, 87, 0.1); border: 1px solid rgba(255, 200, 87, 0.28); }
-.admin-toca { display: inline-flex; align-items: center; gap: 6px; font-size: 0.92rem; color: var(--a-suave); }
+.admin-toca {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  font-size: 0.92rem;
+  color: var(--a-suave);
+}
 .admin-toca .ico { width: 16px; height: 16px; color: #ff9ab0; }
+.admin-toca span, .admin-toca b { white-space: nowrap; }
 .admin-toca b { font-weight: 600; color: #fff; }
 
 .admin-resetear {
@@ -913,6 +921,8 @@ body:has(.admin[open]) { overflow: hidden; }
 #admin-salir { margin-top: 22px; }
 
 @media (max-width: 420px) {
+  .admin-fila { gap: 12px; padding: 12px; }
+  .admin-resetear { padding: 0 12px; }
   .admin-tarjeta { padding: 24px 16px 18px; }
   .admin-stats { gap: 14px; padding: 16px; }
   .admin h2 { font-size: 1.3rem; }
@@ -1946,9 +1956,11 @@ iniciar();
       if (verResultados) {
         const toca = document.createElement("span");
         toca.className = "admin-toca";
+        const txt = document.createElement("span");
+        txt.textContent = "Le regala a";
         const b = document.createElement("b");
         b.textContent = asignaciones[n] || "—";
-        toca.append(icono("gift"), "Le regala a ", b);
+        toca.append(icono("gift"), txt, b);
         info.append(toca);
       }
       li.append(foto, info);
