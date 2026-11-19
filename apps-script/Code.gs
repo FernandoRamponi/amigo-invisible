@@ -23,6 +23,9 @@ const PROHIBIDOS = {};
 // El usuario y la contraseña de admin NO van acá: se crean (o se cambian) desde la web,
 // con un código que llega a MAIL_ADMIN. Se guardan cifrados en las propiedades del script.
 
+// Versión de este código (para comprobar desde afuera cuál está publicada).
+const VERSION = "2026-11-19-sorteo-al-momento";
+
 const props = PropertiesService.getScriptProperties();
 const cache = CacheService.getScriptCache();
 
@@ -44,6 +47,7 @@ function doGet(e) {
       return res;
     }
     if (p.accion === "sortear") return sortear_(String(p.nombre || ""));
+    if (p.accion === "version") return { ok: true, version: VERSION };
     return { ok: false, error: "Acción desconocida" };
   });
 }
@@ -118,8 +122,13 @@ function sortear_(nombre) {
       return { ok: true, yaSorteo: true };
     }
 
-    // Antes de mostrar el resultado, se asegura de que respete las reglas de PROHIBIDOS.
-    if (ajustarReglas_(asignaciones, sorteados)) guardar_("asignaciones", asignaciones);
+    // El resultado se decide recién ahora: se vuelve a mezclar entre todos los que
+    // todavía no sortearon (respetando PROHIBIDOS), así nadie sabe nada de antemano.
+    const libres = libres_(asignaciones, sorteados);
+    const m = repartir_(libres, libres.map(function (n) { return asignaciones[n]; }));
+    if (m) libres.forEach(function (n, i) { asignaciones[n] = m[i]; });
+    else ajustarReglas_(asignaciones, sorteados);
+    guardar_("asignaciones", asignaciones);
 
     sorteados.push(nombre);
     guardar_("sorteados", sorteados);
@@ -367,11 +376,14 @@ function adminEstado_() {
     }
     const sorteados = leer_("sorteados", []);
     if (ajustarReglas_(asignaciones, sorteados)) guardar_("asignaciones", asignaciones);
+    // Solo se muestran los resultados de los que ya sortearon (los demás todavía no están decididos).
+    const vistos = {};
+    sorteados.forEach(function (n) { if (asignaciones[n]) vistos[n] = asignaciones[n]; });
     return {
       ok: true,
       participantes: PARTICIPANTES,
       sorteados: sorteados,
-      asignaciones: asignaciones,
+      asignaciones: vistos,
       conflictos: conflictos_(asignaciones, sorteados),
     };
   } finally {

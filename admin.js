@@ -460,7 +460,7 @@
     faltan.textContent = cuantos === total ? "No falta nadie 🎉" : `Faltan ${total - cuantos}`;
 
     const t = document.createElement("span");
-    t.textContent = verResultados ? "Ocultar resultados" : "Ver a quién le toca";
+    t.textContent = verResultados ? "Ocultar resultados" : "Ver a quién le tocó";
     btnVer.replaceChildren(icono(verResultados ? "eye-off" : "eye"), t);
     btnVer.setAttribute("aria-pressed", String(verResultados));
 
@@ -493,7 +493,7 @@
       chip.append(icono(sorteo ? "check" : "clock"), sorteo ? "Ya sorteó" : "Falta sortear");
       info.append(nombre, chip);
       decorarNombre(li, n, nombre);
-      if (verResultados) {
+      if (verResultados && sorteo) {
         const toca = document.createElement("span");
         toca.className = "admin-toca";
         const txt = document.createElement("span");
@@ -501,6 +501,13 @@
         const b = document.createElement("b");
         b.textContent = asignaciones[n] || "—";
         toca.append(icono("gift"), txt, b);
+        info.append(toca);
+      } else if (verResultados) {
+        const toca = document.createElement("span");
+        toca.className = "admin-toca";
+        const txt = document.createElement("span");
+        txt.textContent = "Se decide cuando sortee";
+        toca.append(icono("clock"), txt);
         info.append(toca);
       }
       li.append(foto, info);
@@ -604,7 +611,9 @@
     if (p.accion === "adminEstado") {
       const asig = demoAsignaciones();
       guardarDemo();
-      return { ok: true, participantes: demo.nombres, sorteados: demo.sorteados, asignaciones: asig };
+      const vistos = {};
+      demo.sorteados.forEach(n => { vistos[n] = asig[n]; });
+      return { ok: true, participantes: demo.nombres, sorteados: demo.sorteados, asignaciones: vistos };
     }
     if (p.accion === "adminResetear") {
       const n = p.nombre;

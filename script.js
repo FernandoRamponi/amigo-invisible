@@ -119,6 +119,13 @@ async function apiDemo(params) {
   if (params.accion === "sortear") {
     const asig = demoAsignaciones();
     if (demo.sorteados.includes(n)) return { ok: true, yaSorteo: true };
+    // Como el Apps Script: se decide recién ahora, mezclando entre los que no sortearon.
+    const libres = demo.nombres.filter(o => !demo.sorteados.includes(o));
+    const destinos = libres.map(o => asig[o]);
+    for (let i = 0; i < 500; i++) {
+      const m = [...destinos].sort(() => Math.random() - 0.5);
+      if (libres.every((o, k) => m[k] !== o)) { libres.forEach((o, k) => { asig[o] = m[k]; }); break; }
+    }
     demo.sorteados.push(n);
     demo.ids[n] = String(Math.random()).slice(2);
     guardarDemo();
