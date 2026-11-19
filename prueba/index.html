@@ -792,14 +792,14 @@ iniciar();
 //   patalea → se resbala y se cae → al chocar el piso SE DESARMA en piezas →
 //   las piezas vuelven volando y se REARMA → festeja → BAILA → y vuelta a empezar.
 // Tocalo mientras mira la tarjeta para que salte enseguida.
-// Si hay un mensaje en la tarjeta (por ejemplo, el resultado), no se cuelga
-// para no taparlo: directamente baila.
+// Si la tarjeta muestra el resultado del sorteo, no se cuelga para no taparlo:
+// directamente baila.
 // Si el navegador no soporta 3D, queda el Santa plano (SVG) de respaldo.
 // =====================================================
 (function () {
   const contenedor = document.querySelector(".santa-baile");
   const tarjeta = document.querySelector(".tarjeta-sorteo");
-  const mensaje = document.getElementById("mensaje");
+  const ruleta = document.getElementById("ruleta");
   if (!contenedor || !tarjeta || typeof THREE === "undefined") return;
 
   // ¿Hay WebGL?
@@ -1317,9 +1317,9 @@ iniciar();
     medir();
     const alturaColgado = bordeY - 0.03 - ALTURA_MANOS - pisoY;   // cuánto sube hasta agarrarse
 
-    // Si la tarjeta muestra un mensaje (por ejemplo, el resultado), no se cuelga para no taparlo: baila.
+    // Si la tarjeta muestra el resultado del sorteo, no se cuelga para no taparlo: baila.
     let c = (t - inicio) % CICLO;
-    if (c >= T.vuelta && cAnterior < T.vuelta && mensaje && mensaje.textContent.trim()) {
+    if (c >= T.vuelta && cAnterior < T.vuelta && ruleta && ruleta.classList.contains("ganador")) {
       inicio = t - T.baile;
       c = T.baile;
     }
