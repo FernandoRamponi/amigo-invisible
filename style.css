@@ -309,98 +309,41 @@ h1 {
   font-size: 0.85rem;
 }
 
-/* Santa bailando */
+/* Mini Santa: vive abajo de la tarjeta, salta, se agarra del borde y se cae */
 .santa-baile {
   position: relative;
+  z-index: 2;                 /* por encima de la tarjeta, para que se vean las manos agarrando el borde */
   display: flex;
   justify-content: center;
-  margin: 4px 0 12px;
-  z-index: 0;
+  align-items: flex-end;
+  height: 260px;
+  margin: 0 0 8px;
+  -webkit-tap-highlight-color: transparent;
 }
 .santa-svg { max-width: 60vw; height: auto; overflow: visible; }
 
+/* El lienzo 3D sube por detrás del borde de la tarjeta; no tapa clics */
 .santa-3d {
   display: none;
-  width: 300px;
-  height: 300px;
-  max-width: 82vw;
-  max-height: 82vw;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  position: absolute;
+  left: 0;
+  top: -150px;
+  width: 100%;
+  height: 410px;
+  pointer-events: none;
 }
+.santa-baile.con-3d { cursor: pointer; }
 .santa-baile.con-3d .santa-svg { display: none; }
 .santa-baile.con-3d .santa-3d { display: block; }
-.santa-baile.con-3d { margin-top: -12px; }
 
-/* Cartel con el nombre del baile */
-.santa-cartel {
-  position: absolute;
-  bottom: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 5px 14px;
-  border-radius: 999px;
-  background: rgba(26, 15, 10, 0.85);
-  border: 2px solid var(--dorado);
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.95rem;
-  white-space: nowrap;
-  pointer-events: none;
-  box-shadow: 0 0 14px rgba(244, 197, 66, 0.35);
-}
-.santa-cartel.nuevo { animation: cartel-pop 0.45s cubic-bezier(.3, 1.6, .5, 1); }
-@keyframes cartel-pop {
-  from { transform: translateX(-50%) scale(0.4) rotate(-8deg); opacity: 0; }
-  to { transform: translateX(-50%) scale(1) rotate(0); opacity: 1; }
-}
-
-.santa { transform-origin: 100px 230px; animation: santa-rebote 0.5s ease-in-out infinite alternate; }
-.sombra { fill: rgba(0, 0, 0, 0.35); transform-origin: 100px 248px; animation: sombra 0.5s ease-in-out infinite alternate; }
-.pierna-izq { transform-origin: 85px 165px; animation: pierna-izq 0.5s ease-in-out infinite alternate; }
-.pierna-der { transform-origin: 115px 165px; animation: pierna-der 0.5s ease-in-out infinite alternate; }
-.brazo-izq { transform-origin: 64px 113px; animation: brazo-izq 0.25s ease-in-out infinite alternate; }
-.brazo-der { transform-origin: 136px 113px; animation: brazo-der 0.25s ease-in-out infinite alternate; animation-delay: -0.125s; }
-.cabeza { transform-origin: 100px 98px; animation: cabeza 0.5s ease-in-out infinite alternate; }
-.gorro { transform-origin: 100px 48px; animation: gorro 0.5s ease-in-out infinite alternate-reverse; }
-.boca { transform-origin: 100px 95px; animation: boca 0.25s ease-in-out infinite alternate; }
+/* Santa plano de respaldo (si el navegador no tiene 3D): se balancea tranquilo */
+.santa { transform-origin: 100px 230px; animation: santa-respira 1.6s ease-in-out infinite alternate; }
+.sombra { fill: rgba(0, 0, 0, 0.35); }
 .ojo { transform-box: fill-box; transform-origin: center; animation: parpadeo 3.5s infinite; }
 
-@keyframes santa-rebote {
-  from { transform: translateY(0) rotate(-5deg); }
-  to { transform: translateY(-14px) rotate(5deg); }
-}
-@keyframes sombra {
-  from { transform: scaleX(1); opacity: 1; }
-  to { transform: scaleX(0.75); opacity: 0.6; }
-}
-@keyframes pierna-izq {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(28deg); }
-}
-@keyframes pierna-der {
-  from { transform: rotate(-28deg); }
-  to { transform: rotate(0deg); }
-}
-@keyframes brazo-izq {
-  from { transform: rotate(25deg); }
-  to { transform: rotate(-45deg); }
-}
-@keyframes brazo-der {
-  from { transform: rotate(-25deg); }
-  to { transform: rotate(45deg); }
-}
-@keyframes cabeza {
-  from { transform: rotate(6deg); }
-  to { transform: rotate(-6deg); }
-}
-@keyframes gorro {
-  from { transform: rotate(-10deg); }
-  to { transform: rotate(8deg); }
-}
-@keyframes boca {
-  from { transform: scaleY(0.5); }
-  to { transform: scaleY(1.2); }
+@keyframes santa-respira {
+  from { transform: translateY(0) rotate(-2deg); }
+  to { transform: translateY(-4px) rotate(2deg); }
 }
 @keyframes parpadeo {
   0%, 92%, 100% { transform: scaleY(1); }
@@ -408,7 +351,7 @@ h1 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .santa, .sombra, .pierna, .brazo, .cabeza, .gorro, .boca, .ojo,
+  .santa, .ojo,
   .opcion::after, .selector-boton.elegido::after { animation: none; }
   .opcion { opacity: 1; animation: none; }
 }

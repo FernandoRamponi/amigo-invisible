@@ -1,13 +1,19 @@
 // =====================================================
-// MINI SANTA 3D bailando (Three.js)
-// Un Santa petiso y cabezón, con piel esponjosa, anteojos y gorro que se dobla,
-// que hace bailes tipo meme sobre una pista con luces de colores.
-// Tocalo para que salte y cambie de baile.
+// MINI SANTA 3D (Three.js)
+// Un Santa petiso y cabezón que vive abajo de la tarjeta:
+//   mira la tarjeta → se da vuelta → salta de espaldas y se cuelga del borde →
+//   patalea → se resbala y se cae → al chocar el piso SE DESARMA en piezas →
+//   las piezas vuelven volando y se REARMA → festeja → baila «AY QUÉ LOCURA» → y vuelta a empezar.
+// Tocalo y se desarma en el momento (después se rearma, festeja y baila).
+// Si la tarjeta muestra el resultado del sorteo, no se cuelga para no taparlo:
+// directamente baila.
 // Si el navegador no soporta 3D, queda el Santa plano (SVG) de respaldo.
 // =====================================================
 (function () {
   const contenedor = document.querySelector(".santa-baile");
-  if (!contenedor || typeof THREE === "undefined") return;
+  const tarjeta = document.querySelector(".tarjeta-sorteo");
+  const ruleta = document.getElementById("ruleta");
+  if (!contenedor || !tarjeta || typeof THREE === "undefined") return;
 
   // ¿Hay WebGL?
   try {
@@ -17,9 +23,8 @@
 
   const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const PI = Math.PI;
-  const PI2 = PI * 2;
 
-  // ---------- Render ----------
+  // ---------- Escena ----------
   const canvas = document.createElement("canvas");
   canvas.className = "santa-3d";
   canvas.setAttribute("aria-hidden", "true");
@@ -28,517 +33,807 @@
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const escena = new THREE.Scene();
-  const camara = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
-  camara.position.set(0, 1.7, 6.2);
-  camara.lookAt(0, 0.95, 0);
+  const camara = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
+  const PIXELES_POR_UNIDAD = 84;   // tamaño del Santa en pantalla
 
-  // ---------- Luces ----------
-  escena.add(new THREE.HemisphereLight(0xfff1dc, 0x24324a, 0.85));
-
-  const principal = new THREE.DirectionalLight(0xfff4e6, 1.6);
-  principal.position.set(2.2, 4.5, 3.5);
-  principal.castShadow = true;
-  principal.shadow.mapSize.set(1024, 1024);
-  Object.assign(principal.shadow.camera, { left: -2, right: 2, top: 2.5, bottom: -1, near: 1, far: 12 });
-  principal.shadow.radius = 4;
-  principal.shadow.bias = -0.0015;
-  escena.add(principal);
-
-  const contraluz = new THREE.DirectionalLight(0x9fd0ff, 1.1);   // borde de luz por detrás
-  contraluz.position.set(-3, 2.5, -3);
-  escena.add(contraluz);
-
-  const relleno = new THREE.DirectionalLight(0xffd6e8, 0.35);
-  relleno.position.set(-3, 1, 3);
+  escena.add(new THREE.HemisphereLight(0xfff4e0, 0x203040, 0.65));
+  const sol = new THREE.DirectionalLight(0xffffff, 0.7);
+  sol.position.set(2, 4, 3);
+  escena.add(sol);
+  const relleno = new THREE.DirectionalLight(0xffe6f0, 0.25);
+  relleno.position.set(-2, 1, 3);
   escena.add(relleno);
 
-  // Luces de boliche que giran alrededor
-  const lucesDisco = [0xff3d7f, 0x3dd6ff, 0xffd23d, 0x7dff6a].map(c => {
-    const l = new THREE.PointLight(c, 0.7, 4.5, 2);
-    escena.add(l);
-    return l;
-  });
-
   // ---------- Materiales ----------
-  const color = hex => new THREE.Color(hex).convertSRGBToLinear();
-  const material = (hex, rugosidad = 0.7, extra = {}) =>
-    new THREE.MeshStandardMaterial(Object.assign({ color: color(hex), roughness: rugosidad, metalness: 0 }, extra));
+  const mat = c => new THREE.MeshToonMaterial({ color: c });
+  const rojo = mat(0xe01b34);
+  const rojoOscuro = mat(0xa8102a);
+  const blanco = mat(0xffffff);
+  const piel = mat(0xffcfae);
+  const negro = mat(0x1e1e24);
+  const dorado = mat(0xffc93c);
+  const naricita = mat(0xff9e86);
+  const rosa = new THREE.MeshToonMaterial({ color: 0xff8a9a, transparent: true, opacity: 0.7 });
+  const verde = mat(0x1e9a55);
 
-  const M = {
-    saco: material(0xc8102e, 0.78),
-    pantalon: material(0xa50d27, 0.8),
-    piel: material(0xf9bb94, 0.6),
-    nariz: material(0xf29a86, 0.45),
-    pelo: material(0xfffaf2, 1),
-    pelaje: material(0xfff6ea, 1),
-    bota: material(0x17171c, 0.32),
-    suela: material(0x3a2a22, 0.8),
-    cinturon: material(0x1a1a1f, 0.35),
-    oro: material(0xf2b632, 0.28, { metalness: 0.85, emissive: color(0x3a2400) }),
-    guante: material(0x1f6b3a, 0.75),
-    ojo: material(0x15110f, 0.12),
-    boca: material(0x7a1622, 0.6),
-    brillo: new THREE.MeshBasicMaterial({ color: 0xffffff }),
-    rubor: new THREE.MeshStandardMaterial({ color: color(0xff7d8f), roughness: 1, transparent: true, opacity: 0.45, depthWrite: false }),
-  };
+  const esfera = (r, m, seg = 24) => new THREE.Mesh(new THREE.SphereGeometry(r, seg, Math.round(seg * 0.75)), m);
 
-  const geoEsfera = {};
-  function esfera(r, mat, sx = 1, sy = 1, sz = 1) {
-    const clave = r.toFixed(3);
-    if (!geoEsfera[clave]) geoEsfera[clave] = new THREE.SphereGeometry(r, 32, 24);
-    const m = new THREE.Mesh(geoEsfera[clave], mat);
-    m.scale.set(sx, sy, sz);
-    return m;
-  }
-  function cilindro(rArriba, rAbajo, alto, mat) {
-    return new THREE.Mesh(new THREE.CylinderGeometry(rArriba, rAbajo, alto, 32), mat);
-  }
-  function en(obj, x, y, z) { obj.position.set(x, y, z); return obj; }
-
-  // Anillo de "piel" esponjosa hecho con bolitas (para bordes del saco, gorro, puños, botas)
-  function anillo(radio, cantidad, rBolita, mat = M.pelaje, aplastado = 1) {
-    const g = new THREE.Group();
-    for (let i = 0; i < cantidad; i++) {
-      const a = (i / cantidad) * PI2;
-      const variacion = 1 + (i % 3 === 0 ? 0.12 : i % 3 === 1 ? -0.06 : 0);
-      g.add(en(esfera(rBolita * variacion, mat, 1, aplastado, 1), Math.cos(a) * radio, 0, Math.sin(a) * radio));
-    }
-    const relleno = new THREE.Mesh(new THREE.TorusGeometry(radio, rBolita * 0.8, 12, 48), mat);
-    relleno.rotation.x = PI / 2;
-    relleno.scale.z = aplastado;
-    g.add(relleno);
-    return g;
-  }
-
-  // ---------- Pista ----------
-  const pista = new THREE.Mesh(
-    new THREE.CircleGeometry(1.45, 64),
-    new THREE.MeshBasicMaterial({ color: 0xff3d7f, transparent: true, opacity: 0.16, depthWrite: false })
+  // ---------- Sombra en el piso ----------
+  const sombraTex = (() => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    const g = c.getContext("2d");
+    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, "rgba(0,0,0,0.5)");
+    grad.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  const sombra = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.2, 1.2),
+    new THREE.MeshBasicMaterial({ map: sombraTex, transparent: true, depthWrite: false })
   );
-  pista.rotation.x = -PI / 2;
-  escena.add(pista);
-
-  const aro = new THREE.Mesh(
-    new THREE.RingGeometry(1.4, 1.47, 96),
-    new THREE.MeshBasicMaterial({ color: 0xffd23d, transparent: true, opacity: 0.6, depthWrite: false })
-  );
-  aro.rotation.x = -PI / 2;
-  aro.position.y = 0.002;
-  escena.add(aro);
-
-  const piso = new THREE.Mesh(new THREE.CircleGeometry(1.6, 48), new THREE.ShadowMaterial({ opacity: 0.38 }));
-  piso.rotation.x = -PI / 2;
-  piso.position.y = 0.003;
-  piso.receiveShadow = true;
-  escena.add(piso);
+  sombra.rotation.x = -PI / 2;
+  escena.add(sombra);
 
   // ---------- Mini Santa ----------
-  const santa = new THREE.Group();   // se mueve por la pista y gira
-  const rebote = new THREE.Group();  // salta al ritmo
-  santa.add(rebote);
+  // santa (posición) > colgador (pivote en las manos, para balancearse colgado) > cuerpo (origen en los pies)
+  const BRAZO_SUP = 0.21;              // hombro → codo
+  const ANTEBRAZO = 0.265;             // codo → centro del guante
+  const LARGO_BRAZO = BRAZO_SUP + ANTEBRAZO;
+  const BRAZOS_ARRIBA = 2.95;          // ángulo de los brazos estirados para arriba
+  const ALTURA_MANOS = 0.36 + 0.48 + LARGO_BRAZO * Math.cos(PI - BRAZOS_ARRIBA);   // guantes con los brazos arriba
+  const santa = new THREE.Group();
+  const colgador = new THREE.Group();
+  colgador.position.y = ALTURA_MANOS;
+  const cuerpo = new THREE.Group();
+  cuerpo.position.y = -ALTURA_MANOS;
+  santa.add(colgador);
+  colgador.add(cuerpo);
   escena.add(santa);
 
-  // Piernas con botas
+  // Piernas (cortitas)
   function pierna(lado) {
-    const g = en(new THREE.Group(), 0.16 * lado, 0.36, 0);
-    g.add(en(cilindro(0.1, 0.105, 0.2, M.pantalon), 0, -0.1, 0));
-    g.add(en(anillo(0.105, 12, 0.045), 0, -0.2, 0));
-    g.add(en(cilindro(0.1, 0.11, 0.07, M.bota), 0, -0.24, 0));
-    g.add(en(esfera(0.13, M.bota, 1, 0.62, 1.45), 0, -0.29, 0.06));
-    g.add(en(esfera(0.13, M.suela, 1.02, 0.2, 1.48), 0, -0.335, 0.06));
-    rebote.add(g);
+    const g = new THREE.Group();
+    g.position.set(0.17 * lado, 0.36, 0);
+    g.rotation.z = 0.08 * lado;
+    const muslo = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.26, 16), rojoOscuro);
+    muslo.position.y = -0.13;
+    const bota = esfera(0.14, negro);
+    bota.scale.set(1, 0.65, 1.45);
+    bota.position.set(0, -0.28, 0.06);
+    g.add(muslo, bota);
+    cuerpo.add(g);
     return g;
   }
   const piernaIzq = pierna(-1);
   const piernaDer = pierna(1);
 
   // Cadera: todo lo de arriba cuelga de acá
-  const cadera = en(new THREE.Group(), 0, 0.36, 0);
-  rebote.add(cadera);
+  const cadera = new THREE.Group();
+  cadera.position.y = 0.36;
+  cuerpo.add(cadera);
 
-  // Panza / saco
-  const RX = 0.44, RY = 0.4, RZ = 0.42, CY = 0.3;
-  cadera.add(en(esfera(1, M.saco, RX, RY, RZ), 0, CY, 0));
-  cadera.add(en(anillo(0.375, 26, 0.07), 0, 0.05, 0));                     // borde de abajo
-  const cinto = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.045, 16, 64), M.cinturon);
-  cinto.rotation.x = PI / 2;
-  cinto.scale.set(1.01, 0.97, 1);
-  cadera.add(en(cinto, 0, 0.22, 0));
-  // Hebilla dorada
-  const hebilla = new THREE.Group();
-  hebilla.add(new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.13, 0.035), M.oro));
-  hebilla.add(en(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.065, 0.04), M.cinturon), 0, 0, 0.004));
-  hebilla.add(en(new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.07, 0.05), M.oro), 0.02, 0, 0.004));
-  cadera.add(en(hebilla, 0, 0.22, 0.455));
-  // Tira de piel en el frente del saco
-  [0.1, 0.15, 0.31, 0.37, 0.43, 0.49, 0.55, 0.6].forEach(y => {
-    const z = RZ * Math.sqrt(Math.max(0, 1 - ((y - CY) / RY) ** 2));
-    cadera.add(en(esfera(0.055, M.pelaje), 0, y, z - 0.015));
+  // Panza
+  const panza = esfera(0.42, rojo, 32);
+  panza.scale.set(1.05, 0.95, 1);
+  panza.position.y = 0.3;
+  const ruedo = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.075, 12, 40), blanco);
+  ruedo.rotation.x = PI / 2;
+  ruedo.position.y = 0.04;
+  const cinturon = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.045, 10, 40), negro);
+  cinturon.rotation.x = PI / 2;
+  cinturon.position.y = 0.24;
+  const hebilla = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.12, 0.05), dorado);
+  hebilla.position.set(0, 0.24, 0.45);
+  const botones = [0.4, 0.52].map(y => {
+    const b = esfera(0.035, blanco, 12);
+    b.position.set(0, y, 0.4 - (y - 0.4) * 0.6);
+    return b;
   });
-  cadera.add(en(anillo(0.2, 16, 0.065), 0, 0.66, 0));                      // cuello
-  cadera.add(en(esfera(0.085, M.pelaje), 0, 0.12, -0.39));                  // colita
+  const colita = esfera(0.09, blanco, 16);
+  colita.position.set(0, 0.12, -0.38);
+  cadera.add(panza, ruedo, cinturon, hebilla, colita, ...botones);
 
-  // Brazos con codo, puño de piel y guante con pulgar
+  // Brazos con codo (hombro > brazo > codo > antebrazo, puño de piel y guante con pulgar)
   function brazo(lado) {
-    const hombro = en(new THREE.Group(), 0.37 * lado, 0.5, 0);
-    hombro.add(esfera(0.095, M.saco));
-    hombro.add(en(cilindro(0.085, 0.08, 0.18, M.saco), 0, -0.09, 0));
-    const codo = en(new THREE.Group(), 0, -0.18, 0);
-    codo.add(esfera(0.08, M.saco));
-    codo.add(en(cilindro(0.08, 0.075, 0.13, M.saco), 0, -0.065, 0));
-    codo.add(en(anillo(0.075, 10, 0.04), 0, -0.14, 0));
-    const mano = en(new THREE.Group(), 0, -0.22, 0);
-    mano.add(esfera(0.09, M.guante, 0.95, 1.05, 0.8));
-    mano.add(en(esfera(0.04, M.guante, 1, 1.3, 1), -0.07 * lado, 0.02, 0.04));
-    codo.add(mano);
-    hombro.add(codo);
+    const hombro = new THREE.Group();
+    hombro.position.set(0.33 * lado, 0.48, 0.1);
+    hombro.rotation.z = 0.25 * lado;
+    const bolaHombro = esfera(0.09, rojo, 16);
+    const brazoSup = new THREE.Mesh(new THREE.CylinderGeometry(0.088, 0.08, BRAZO_SUP, 14), rojo);
+    brazoSup.position.y = -BRAZO_SUP / 2;
+    const codo = new THREE.Group();
+    codo.position.y = -BRAZO_SUP;
+    const bolaCodo = esfera(0.08, rojo, 14);
+    const largoAnte = ANTEBRAZO - 0.08;
+    const antebrazo = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.074, largoAnte, 14), rojo);
+    antebrazo.position.y = -largoAnte / 2;
+    const puno = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.035, 8, 20), blanco);
+    puno.rotation.x = PI / 2;
+    puno.position.y = -ANTEBRAZO + 0.075;
+    const guante = esfera(0.1, verde, 16);
+    guante.position.y = -ANTEBRAZO;
+    const pulgar = esfera(0.042, verde, 12);
+    pulgar.position.set(-0.07 * lado, -ANTEBRAZO + 0.03, 0.05);
+    codo.add(bolaCodo, antebrazo, puno, guante, pulgar);
+    hombro.add(bolaHombro, brazoSup, codo);
     cadera.add(hombro);
-    return { hombro, codo };
+    return { hombro, codo, lado };
   }
-  const brazoIzq = brazo(-1);
-  const brazoDer = brazo(1);
+  const brazoIzq = brazo(-1);   // el de la izquierda de la pantalla
+  const brazoDer = brazo(1);    // el de la derecha de la pantalla
 
-  // Cabeza grande (estilo chibi)
-  const cabeza = en(new THREE.Group(), 0, 0.72, 0);
+  // Cabeza (bien grande, estilo chibi)
+  const cabeza = new THREE.Group();
+  cabeza.position.y = 0.72;
   cadera.add(cabeza);
-  cabeza.add(en(esfera(0.4, M.piel), 0, 0.32, 0));
-  cabeza.add(en(esfera(0.07, M.piel, 0.5, 1, 0.8), -0.39, 0.32, 0));       // orejas
-  cabeza.add(en(esfera(0.07, M.piel, 0.5, 1, 0.8), 0.39, 0.32, 0));
 
-  // Barba esponjosa
-  cabeza.add(en(esfera(0.33, M.pelo, 1.05, 0.9, 0.8), 0, 0.08, 0.1));
-  for (let i = 0; i <= 12; i++) {
-    const a = (-0.5 + i / 12) * PI * 1.15;
-    const r = 0.075 + Math.abs(Math.cos(a)) * 0.03;
-    cabeza.add(en(esfera(r, M.pelo), Math.sin(a) * 0.35, 0.1 - Math.cos(a) * 0.28, 0.1 + Math.cos(a) * 0.17));
-  }
-  // Pelo a los costados de la cabeza
-  [-1, 1].forEach(l => {
-    cabeza.add(en(esfera(0.1, M.pelo), 0.36 * l, 0.22, -0.02));
-    cabeza.add(en(esfera(0.09, M.pelo), 0.35 * l, 0.12, 0.06));
-  });
+  const cara = esfera(0.4, piel, 32);
+  cara.position.y = 0.32;
+  const barba = esfera(0.36, blanco, 28);
+  barba.scale.set(1.05, 0.85, 0.8);
+  barba.position.set(0, -0.02, 0.1);
+  const bigoteIzq = esfera(0.1, blanco, 16);
+  bigoteIzq.scale.set(1.5, 0.75, 0.9);
+  bigoteIzq.position.set(-0.1, 0.25, 0.37);
+  bigoteIzq.rotation.z = 0.35;
+  const bigoteDer = bigoteIzq.clone();
+  bigoteDer.position.x = 0.1;
+  bigoteDer.rotation.z = -0.35;
+  const nariz = esfera(0.065, naricita, 16);
+  nariz.position.set(0, 0.31, 0.41);
+  const mejillaIzq = esfera(0.07, rosa, 12);
+  mejillaIzq.scale.set(1, 0.6, 0.4);
+  mejillaIzq.position.set(-0.22, 0.32, 0.31);
+  const mejillaDer = mejillaIzq.clone();
+  mejillaDer.position.x = 0.22;
 
-  // Boca, bigote, nariz, cachetes
-  cabeza.add(en(esfera(0.05, M.boca, 1.3, 0.75, 0.5), 0, 0.165, 0.365));
-  [-1, 1].forEach(l => {
-    const bigote = en(esfera(0.1, M.pelo, 1.45, 0.68, 0.85), 0.1 * l, 0.245, 0.37);
-    bigote.rotation.z = -0.32 * l;
-    cabeza.add(bigote);
-    cabeza.add(en(esfera(0.045, M.pelo), 0.215 * l, 0.29, 0.32));
-  });
-  cabeza.add(en(esfera(0.07, M.nariz), 0, 0.315, 0.41));
-  cabeza.add(en(esfera(0.075, M.rubor, 1, 0.65, 0.35), -0.215, 0.3, 0.33));
-  cabeza.add(en(esfera(0.075, M.rubor, 1, 0.65, 0.35), 0.215, 0.3, 0.33));
-
-  // Ojos brillantes y cejas esponjosas
-  const ojos = [-1, 1].map(l => {
-    const g = en(new THREE.Group(), 0.13 * l, 0.425, 0.355);
-    g.add(esfera(0.062, M.ojo, 0.8, 1.1, 0.55));
-    g.add(en(esfera(0.02, M.brillo), 0.02, 0.03, 0.03));
-    g.add(en(esfera(0.009, M.brillo), -0.015, -0.02, 0.032));
-    cabeza.add(g);
-    [-0.05, 0, 0.05].forEach((dx, i) => {
-      cabeza.add(en(esfera(0.03 - i * 0.003, M.pelo), 0.13 * l + dx * l, 0.535 + (i === 1 ? 0.012 : 0), 0.33));
-    });
+  function ojo(x) {
+    const g = new THREE.Group();
+    g.position.set(x, 0.43, 0.35);
+    const o = esfera(0.055, negro, 16);
+    o.scale.set(0.85, 1.15, 0.6);
+    const brillo = esfera(0.018, blanco, 8);
+    brillo.position.set(0.018, 0.025, 0.03);
+    g.add(o, brillo);
     return g;
-  });
+  }
+  const ojoIzq = ojo(-0.13);
+  const ojoDer = ojo(0.13);
+  const cejaIzq = esfera(0.05, blanco, 12);
+  cejaIzq.scale.set(1.3, 0.45, 0.5);
+  cejaIzq.rotation.z = 0.25;
+  cejaIzq.position.set(-0.13, 0.53, 0.34);
+  const cejaDer = cejaIzq.clone();
+  cejaDer.rotation.z = -0.25;
+  cejaDer.position.x = 0.13;
+  // Lengua (sale en la parte "¡qué locura!" del baile)
+  const lengua = esfera(0.065, mat(0xff6b81), 14);
+  lengua.position.set(0, 0.14, 0.36);
+  lengua.scale.setScalar(0.001);
+  cabeza.add(cara, barba, lengua, bigoteIzq, bigoteDer, nariz, mejillaIzq, mejillaDer, ojoIzq, ojoDer, cejaIzq, cejaDer);
 
-  // Anteojos dorados
-  const anteojos = new THREE.Group();
-  [-1, 1].forEach(l => {
-    anteojos.add(en(new THREE.Mesh(new THREE.TorusGeometry(0.078, 0.009, 10, 40), M.oro), 0.13 * l, 0, 0));
-  });
-  const puente = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.008, 8, 20, PI), M.oro);
-  anteojos.add(en(puente, 0, 0.01, 0));
-  cabeza.add(en(anteojos, 0, 0.42, 0.405));
-
-  // Gorro con banda esponjosa, punta en segmentos que se dobla y pompón
-  const gorro = en(new THREE.Group(), 0, 0.6, 0);
-  gorro.rotation.z = -0.1;
+  // Gorro con punta que se bambolea
+  const gorro = new THREE.Group();
+  gorro.position.y = 0.55;
+  gorro.rotation.z = -0.12;
   cabeza.add(gorro);
-  gorro.add(anillo(0.36, 26, 0.085));
-  gorro.add(en(cilindro(0.3, 0.37, 0.22, M.saco), 0, 0.11, 0));
-  const segmentos = [];
-  let padre = en(new THREE.Group(), 0, 0.22, 0);
-  gorro.add(padre);
-  const radios = [0.3, 0.245, 0.19, 0.135, 0.085, 0.045];
-  for (let i = 0; i < radios.length - 1; i++) {
-    const seg = new THREE.Group();
-    seg.add(en(cilindro(radios[i + 1], radios[i], 0.15, M.saco), 0, 0.075, 0));
-    padre.add(seg);
-    segmentos.push(seg);
-    const siguiente = en(new THREE.Group(), 0, 0.15, 0);
-    siguiente.add(esfera(radios[i + 1], M.saco));   // tapa la unión para que el doblez quede liso
-    seg.add(siguiente);
-    padre = siguiente;
+  const banda = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.085, 12, 40), blanco);
+  banda.rotation.x = PI / 2;
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.37, 0.25, 28), rojo);
+  base.position.y = 0.12;
+  const punta = new THREE.Group();
+  punta.position.y = 0.24;
+  const cono = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.45, 24), rojo);
+  cono.position.y = 0.2;
+  const bolita = esfera(0.085, blanco, 16);
+  bolita.position.y = 0.44;
+  punta.add(cono, bolita);
+  gorro.add(banda, base, punta);
+
+  // Estrellitas de mareo (cuando la cabeza queda tirada en el piso)
+  const formaEstrella = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? 0.14 : 0.062;
+    const a = (i / 10) * PI * 2 - PI / 2;
+    if (i === 0) formaEstrella.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+    else formaEstrella.lineTo(Math.cos(a) * r, Math.sin(a) * r);
   }
-  padre.add(en(esfera(0.085, M.pelaje), 0, 0.03, 0));
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * PI2;
-    padre.add(en(esfera(0.045, M.pelaje), Math.cos(a) * 0.06, 0.03 + Math.sin(a * 2) * 0.03, Math.sin(a) * 0.06));
+  const geoEstrella = new THREE.ShapeGeometry(formaEstrella);
+  const estrellas = [0xffd23d, 0xfff3a0, 0xffb627].map(c => {
+    const e = new THREE.Mesh(geoEstrella, new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide, transparent: true }));
+    e.visible = false;
+    escena.add(e);
+    return e;
+  });
+
+  // ---------- Piezas que se desarman ----------
+  // Cada pieza tiene un "ancla": un punto invisible en su lugar de siempre,
+  // que es adonde vuelve volando cuando el Santa se rearma.
+  function ancla(padre, obj) {
+    const a = new THREE.Object3D();
+    a.position.copy(obj.position);
+    a.rotation.copy(obj.rotation);
+    padre.add(a);
+    return a;
+  }
+  const PIEZAS = [
+    { obj: piernaIzq, padre: cuerpo, radio: 0.16, centro: new THREE.Vector3(0, -0.17, 0.03), vel: [-1.5, 2.0, 0.5], demora: 0 },
+    { obj: piernaDer, padre: cuerpo, radio: 0.16, centro: new THREE.Vector3(0, -0.17, 0.03), vel: [1.6, 2.2, 0.4], demora: 0.04 },
+    { obj: brazoIzq.hombro, padre: cadera, radio: 0.12, centro: new THREE.Vector3(0, -0.25, 0), vel: [-2.2, 2.8, 0.4], demora: 0.12 },
+    { obj: brazoDer.hombro, padre: cadera, radio: 0.12, centro: new THREE.Vector3(0, -0.25, 0), vel: [2.2, 3.0, 0.3], demora: 0.16 },
+    { obj: cabeza, padre: cadera, radio: 0.4, centro: new THREE.Vector3(0, 0.3, 0), vel: [-0.7, 3.8, 0.4], demora: 0.26 },
+    { obj: gorro, padre: cabeza, radio: 0.24, centro: new THREE.Vector3(0, 0.22, 0), vel: [0.9, 4.6, 0.2], demora: 0.4 },
+  ];
+  PIEZAS.forEach(p => {
+    p.ancla = ancla(p.padre, p.obj);
+    p.v = new THREE.Vector3();
+    p.giro = new THREE.Vector3();
+    p.desde = new THREE.Vector3();
+    p.desdeQ = new THREE.Quaternion();
+  });
+
+  let estado = "armado";   // "armado" | "desarmado" | "rearmando"
+
+  function desarmar() {
+    escena.updateMatrixWorld(true);
+    // Primero el gorro (que está adentro de la cabeza), después el resto
+    [...PIEZAS].reverse().forEach(p => escena.attach(p.obj));
+    PIEZAS.forEach(p => {
+      const azar = () => (Math.random() - 0.5) * 0.6;
+      p.v.set(p.vel[0] + azar(), p.vel[1] + azar(), p.vel[2] + azar() * 0.5);
+      p.giro.set((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 16);
+      p.obj.scale.set(1, 1, 1);
+    });
+    estado = "desarmado";
   }
 
-  // Sombras del Santa
-  santa.traverse(o => { if (o.isMesh) { o.castShadow = true; } });
+  const centroMundo = new THREE.Vector3();
+  function moverPiezas(dt, limiteX) {
+    const g = 14;
+    PIEZAS.forEach(p => {
+      p.v.y -= g * dt;
+      p.obj.position.addScaledVector(p.v, dt);
+      p.obj.rotation.x += p.giro.x * dt;
+      p.obj.rotation.y += p.giro.y * dt;
+      p.obj.rotation.z += p.giro.z * dt;
+      // Rebota en el piso (usando el centro real de la pieza)
+      p.obj.updateMatrixWorld();
+      centroMundo.copy(p.centro);
+      p.obj.localToWorld(centroMundo);
+      const hundido = pisoY + p.radio - centroMundo.y;
+      if (hundido > 0) {
+        p.obj.position.y += hundido;
+        if (p.v.y < 0) p.v.y = -p.v.y * 0.42;
+        p.v.x *= 0.72; p.v.z *= 0.72;
+        p.giro.multiplyScalar(0.65);
+      }
+      // No se va del lienzo
+      if (Math.abs(p.obj.position.x) > limiteX) {
+        p.obj.position.x = Math.sign(p.obj.position.x) * limiteX;
+        p.v.x *= -0.5;
+      }
+      if (Math.abs(p.obj.position.z) > 0.7) {
+        p.obj.position.z = Math.sign(p.obj.position.z) * 0.7;
+        p.v.z *= -0.5;
+      }
+    });
+  }
 
-  // ---------- Tamaño ----------
+  function empezarRearmado() {
+    PIEZAS.forEach(p => {
+      p.desde.copy(p.obj.position);
+      p.desdeQ.copy(p.obj.quaternion);
+    });
+    estado = "rearmando";
+  }
+
+  const destino = new THREE.Vector3();
+  const destinoQ = new THREE.Quaternion();
+  function rearmar(k) {
+    // k va de 0 a 1. Cada pieza sale con su demora: piernas, brazos, cabeza y al final el gorro.
+    santa.updateMatrixWorld(true);
+    PIEZAS.forEach(p => {
+      if (p.obj === gorro) cabeza.updateMatrixWorld(true);
+      const kk = suave(clamp01((k - p.demora) / 0.55));
+      p.ancla.getWorldPosition(destino);
+      p.ancla.getWorldQuaternion(destinoQ);
+      p.obj.position.lerpVectors(p.desde, destino, kk);
+      p.obj.position.y += Math.sin(kk * PI) * 0.7;          // vuelve en arco
+      p.obj.quaternion.copy(p.desdeQ).slerp(destinoQ, kk);
+    });
+  }
+
+  function terminarRearmado() {
+    // Vuelve cada pieza a su lugar exacto dentro del Santa
+    PIEZAS.forEach(p => {
+      p.padre.add(p.obj);
+      p.obj.position.copy(p.ancla.position);
+      p.obj.rotation.copy(p.ancla.rotation);
+      p.obj.scale.set(1, 1, 1);
+    });
+    estado = "armado";
+  }
+
+  // ---------- Medidas: dónde está el borde de la tarjeta y dónde el piso ----------
+  const v = new THREE.Vector3();
+  let altoCanvas = 410;
+  let anchoMundo = 6;
+  function filaAMundoY(fila) {
+    // Convierte una fila de píxeles del lienzo en altura del mundo 3D (en el plano del Santa)
+    v.set(0, 1 - (2 * fila) / altoCanvas, 0.5).unproject(camara);
+    v.sub(camara.position).normalize();
+    const t = -camara.position.z / v.z;
+    return camara.position.y + v.y * t;
+  }
+
   function ajustar() {
-    const w = canvas.clientWidth || 300;
-    const h = canvas.clientHeight || 300;
-    renderer.setSize(w, h, false);
-    camara.aspect = w / h;
+    const w = canvas.clientWidth || 360;
+    altoCanvas = canvas.clientHeight || 410;
+    renderer.setSize(w, altoCanvas, false);
+    camara.aspect = w / altoCanvas;
+    const distancia = altoCanvas / PIXELES_POR_UNIDAD / (2 * Math.tan((camara.fov * PI) / 360));
+    camara.position.set(0, 1, distancia);
+    camara.lookAt(0, 0.3, 0);
     camara.updateProjectionMatrix();
+    camara.updateMatrixWorld();
+    anchoMundo = w / PIXELES_POR_UNIDAD;
   }
   ajustar();
   window.addEventListener("resize", ajustar);
 
-  // ---------- Bailes tipo meme ----------
-  // Cada baile devuelve una "pose" (ángulos de las articulaciones) para el momento b (en beats).
-  // El Santa pasa suave de una pose a la otra, así que los cambios de baile quedan fluidos.
+  let pisoY = 0;
+  let bordeY = 3;
+  function medir() {
+    const rc = canvas.getBoundingClientRect();
+    const rt = tarjeta.getBoundingClientRect();
+    pisoY = filaAMundoY(altoCanvas - 26);
+    bordeY = filaAMundoY(rt.bottom - rc.top - 2);
+  }
+
+  // ---------- Línea de tiempo ----------
   const reloj = new THREE.Clock();
-  const BPM = 116;
-  const BEATS_POR_BAILE = 8;
+  const T = {
+    mira: 0, vuelta: 2.2, agacha: 2.6, salta: 2.95, agarra: 3.4, cuelga: 3.55,
+    resbala: 5.9, cae: 6.3, golpe: 6.75, rearma: 8.3, festeja: 9.5, baile: 10.0, fin: 21.25,   // el baile dura 11,25 s
+  };
+  const CICLO = T.fin;
+  // Con "?baile" en la dirección arranca directo bailando (para probar el baile)
+  let inicio = /[?&]baile\b/.test(location.search) ? -T.baile : 0;
+
+  // Tocalo: se desarma en el momento (y después se rearma, festeja y baila)
+  let yAlDesarmar = 0;     // altura que tenía cuando se desarmó (para que el cuerpo caiga desde ahí)
+  let giroAlDesarmar = 0;
+  contenedor.addEventListener("click", () => {
+    if (estado !== "armado") return;            // ya está en pedazos
+    const c = (reloj.getElapsedTime() - inicio) % CICLO;
+    if (c >= T.golpe && c < T.festeja) return;
+    inicio = reloj.getElapsedTime() - T.golpe;
+  });
+  let ultimaY = 0;
+
+  const clamp01 = x => Math.min(1, Math.max(0, x));
+  const salida = k => 1 - (1 - k) * (1 - k);     // rápido al principio, frena al final
+  const entrada = k => k * k;                     // arranca lento y acelera (caída)
+  const suave = k => k * k * (3 - 2 * k);         // suave al principio y al final
+  const lomo = (u, desde, dura, alto) => (u > desde && u < desde + dura ? Math.sin(((u - desde) / dura) * PI) * alto : 0);
+  const prog = (c, a, b) => clamp01((c - a) / (b - a));
 
   const NEUTRO = {
-    camina: 1, rotY: 0, x: 0, y: 0,
-    cX: 0, cY: 0, cZ: 0,                     // cadera
-    hX: 0, hY: 0, hZ: 0,                     // cabeza
-    aIX: 0, aIY: 0, aIZ: -0.25, cdI: -0.35,  // brazo y codo izquierdo
-    aDX: 0, aDY: 0, aDZ: 0.25, cdD: -0.35,   // brazo y codo derecho
-    pIX: 0, pIZ: -0.08,                      // pierna izquierda
-    pDX: 0, pDZ: 0.08,                       // pierna derecha
+    giro: 0, tumbo: 0, colgZ: 0, colgX: 0, cX: 0, cY: 0, cZ: 0, hX: 0, hY: 0, hZ: 0,
+    aIX: 0, aIZ: -0.25, aDX: 0, aDZ: 0.25,
+    pIX: 0, pIZ: -0.08, pDX: 0, pDZ: 0.08,
+    ojos: 1, lengua: 0,
   };
-  const pose = cambios => Object.assign({}, NEUTRO, cambios);
-  const rebotar = (f, alto) => Math.abs(Math.sin(f / 2)) * alto;
-
-  const BAILES = [
-    {
-      nombre: "🍑 Perreo navideño",
-      pose(b, f) {
-        return pose({
-          camina: 0.3,
-          rotY: PI + Math.sin(b * 0.5) * 0.35,
-          y: rebotar(f, 0.05),
-          cX: 0.42 + Math.sin(f * 2) * 0.2,
-          cZ: Math.sin(f) * 0.15,
-          hX: -0.35, hY: Math.sin(b * 0.5) * 0.5,
-          aIX: -0.5, aIZ: -0.6, aDX: -0.5, aDZ: 0.6, cdI: -0.5, cdD: -0.5,
-          pIZ: -0.28, pDZ: 0.28,
-        });
-      },
-    },
-    {
-      nombre: "🦷 El floss",
-      pose(b, f) {
-        const s = Math.sin(f), c = Math.cos(f);
-        return pose({
-          camina: 0, x: -s * 0.14, y: rebotar(f * 2, 0.03),
-          cZ: -s * 0.18,
-          hZ: s * 0.12,
-          aIZ: s * 0.75, aDZ: s * 0.75,
-          aIX: c * 0.55, aDX: -c * 0.55,
-          cdI: 0, cdD: 0,
-          pIZ: -0.12, pDZ: 0.12,
-        });
-      },
-    },
-    {
-      nombre: "😎 Dab",
-      pose(b) {
-        const lado = Math.floor(b / 2) % 2 === 0 ? 1 : -1;
-        const golpe = (b % 2) < 0.15 ? 0.08 : 0;
-        return pose({
-          camina: 0, y: golpe,
-          cZ: 0.1 * lado,
-          hX: 0.5, hY: -0.35 * lado, hZ: 0.35 * lado,
-          // un brazo doblado tapa la cara, el otro estirado en diagonal
-          aIX: lado > 0 ? -1.1 : 0, aIZ: lado > 0 ? 1.2 : -2.25, cdI: lado > 0 ? -1.5 : 0,
-          aDX: lado > 0 ? 0 : -1.1, aDZ: lado > 0 ? 2.25 : -1.2, cdD: lado > 0 ? 0 : -1.5,
-          pIZ: -0.18, pDZ: 0.18,
-        });
-      },
-    },
-    {
-      nombre: "🐴 Caballito",
-      pose(b, f) {
-        const lazo = (b % 8) >= 4;
-        const g = Math.sin(f * 2);
-        return pose({
-          camina: 1, y: Math.abs(g) * 0.12,
-          cX: 0.1, cZ: Math.sin(f) * 0.08,
-          hX: Math.abs(g) * 0.15,
-          aIX: -1.2, aIZ: 0.45 + g * 0.08, cdI: -0.7,
-          aDX: lazo ? Math.cos(f * 2) * 0.35 : -1.2,
-          aDZ: lazo ? 2.55 + Math.sin(f * 2) * 0.3 : -0.45 - g * 0.08,
-          cdD: lazo ? -0.4 : -0.7,
-          pIX: g * 0.55, pDX: -g * 0.55,
-        });
-      },
-    },
-    {
-      nombre: "💦 Aspersor",
-      pose(b) {
-        const tic = Math.floor(b * 2) % 8;
-        const giro = tic < 6 ? -0.8 + tic * 0.32 : (tic === 6 ? 0.2 : -0.8);
-        return pose({
-          camina: 0, rotY: giro,
-          y: (b * 2) % 1 < 0.2 ? 0.05 : 0,
-          hX: -0.1,
-          aIX: 0.5, aIZ: -2.4, cdI: -1.7,     // mano atrás de la cabeza
-          aDX: -1.5, aDZ: 0.1, cdD: 0,         // brazo estirado adelante
-          pIX: -0.25, pDX: 0.15,
-        });
-      },
-    },
-    {
-      nombre: "🌀 Trompo",
-      pose(b, f) {
-        return pose({
-          camina: 0.5, rotY: b * PI * 1.5,
-          y: 0.05 + Math.sin(f) * 0.03,
-          cZ: 0.12,
-          hX: -0.15, hZ: -0.15,
-          aIZ: -1.55, aDZ: 1.55, cdI: -0.15, cdD: -0.15,
-          pDX: -0.55, pDZ: 0.45,
-        });
-      },
-    },
-    {
-      nombre: "🤖 Robot",
-      rapido: true,
-      pose(b) {
-        const paso = Math.floor(b * 2) % 4;
-        return pose([
-          { camina: 0, aIX: -1.57, aDX: -1.57, cdI: 0, cdD: 0, hY: 0.6 },
-          { camina: 0, aIZ: -1.57, cdI: -1.57, cY: 0.35, hY: -0.6, pIX: -0.3 },
-          { camina: 0, aIZ: -1.57, aDZ: 1.57, cdI: -1.57, cdD: -1.57, hX: 0.3 },
-          { camina: 0, aDX: -1.57, cdD: 0, cY: -0.35, hY: 0.3, pDX: -0.3 },
-        ][paso]);
-      },
-    },
-    {
-      nombre: "🪩 Fiebre disco",
-      pose(b, f) {
-        const arriba = Math.floor(b) % 2 === 0;
-        return pose({
-          camina: 0.5, x: Math.sin(f) * 0.08, y: rebotar(f, 0.05),
-          cZ: Math.sin(f) * 0.2,
-          hY: arriba ? -0.3 : 0.25, hX: arriba ? -0.25 : 0.2,
-          aIX: 0.3, aIZ: -0.8, cdI: -1.6,                                  // mano en la cintura
-          aDX: arriba ? 0 : -0.35, aDZ: arriba ? 2.6 : 0.55, cdD: 0,       // señala arriba y abajo
-          pDZ: arriba ? 0.3 : 0.1,
-        });
-      },
-    },
-  ];
-
-  // Orden aleatorio, sin repetir hasta pasar por todos
-  let orden = [];
-  function siguienteBaile() {
-    if (!orden.length) orden = BAILES.map((_, i) => i).sort(() => Math.random() - 0.5);
-    return orden.shift();
-  }
-
-  const cartel = document.createElement("div");
-  cartel.className = "santa-cartel";
-  contenedor.appendChild(cartel);
-
-  let baileActual = siguienteBaile();
-  let inicioBaile = 0;     // en beats
-  function mostrarCartel() {
-    cartel.textContent = BAILES[baileActual].nombre;
-    cartel.classList.remove("nuevo");
-    void cartel.offsetWidth;
-    cartel.classList.add("nuevo");
-  }
-  mostrarCartel();
-
   const actual = Object.assign({}, NEUTRO);
-  let cambiarAhora = false;
-  let saltoHasta = 0;
+  const TORSO_EN_EL_PISO = -0.27;   // altura del cuerpo sin piernas, apoyado en el piso
 
-  // Tocalo: salta y cambia de baile
-  contenedor.addEventListener("click", () => {
-    cambiarAhora = true;
-    saltoHasta = reloj.getElapsedTime() + 0.6;
-  });
+  // =====================================================
+  // BAILE «AY QUÉ LOCURA»
+  // Coreografía sacada cuadro por cuadro del video de referencia (de 0:04 a 0:15),
+  // a un tiempo cada 0,5 s. Cada paso dice dónde van las manos (I = mano de la
+  // izquierda de la pantalla, D = mano de la derecha), cuánto se inclina/gira el
+  // torso (cX adelante, cY giro, cZ costado), la cabeza (hX asiente, hY gira,
+  // hZ ladea), los ojos (1 normal, <1 sonriendo, >1 abiertos) y la lengua.
+  // Las posiciones son relativas al torso del Santa (x costado, y altura, z adelante).
+  // =====================================================
+  const M = {
+    abajoI: [-0.44, 0.10, 0.12], abajoD: [0.44, 0.10, 0.12],
+    abajoAbiertoI: [-0.5, 0.12, 0.18], abajoAbiertoD: [0.5, 0.12, 0.18],
+    abajoJuntoI: [-0.40, 0.08, 0.06], abajoJuntoD: [0.40, 0.08, 0.06],
+    saludoD: [0.62, 0.80, 0.12], saludoAltoD: [0.56, 0.90, 0.22],
+    pancitaI: [-0.14, 0.22, 0.43], pancitaD: [0.14, 0.22, 0.43],
+    senalaPechoI: [-0.30, 0.45, 0.42], senalaCentroD: [0.06, 0.50, 0.44],
+    giraI: [0.0, 0.40, 0.42], giraI2: [0.0, 0.35, 0.42], giraD: [0.30, 0.38, 0.42], giraD2: [0.42, 0.30, 0.38],
+    palmaI: [-0.04, 0.50, 0.42], palmaD: [0.04, 0.50, 0.44],
+    abajoCruzadoD: [0.20, 0.18, 0.42], pulgarD: [0.12, 0.50, 0.44],
+    punoMentonI: [-0.08, 0.62, 0.42], punoArribaD: [0.48, 0.90, 0.15],
+    abiertoI: [-0.50, 0.55, 0.38], abiertoD: [0.50, 0.55, 0.38],
+    marcoI: [-0.28, 0.70, 0.36], marcoD: [0.30, 0.84, 0.30],
+    cruzI: [0.0, 0.62, 0.38], cruzD: [0.0, 0.66, 0.41],
+    cruzAltaI: [0.0, 0.80, 0.33], cruzAltaD: [0.0, 0.82, 0.36],
+    anchoI: [-0.70, 0.20, 0.10], anchoD: [0.70, 0.20, 0.10],
+    ancho2I: [-0.66, 0.16, 0.18], ancho2D: [0.66, 0.16, 0.18],
+    ancho3I: [-0.60, 0.14, 0.22], ancho3D: [0.60, 0.14, 0.22],
+    atrasI: [-0.48, 0.15, -0.15], cruzaD: [0.0, 0.42, 0.42],
+    balanceoI: [-0.50, 0.25, 0.25], cruzaD2: [0.0, 0.38, 0.42],
+    plegadoI: [0.0, 0.40, 0.43], plegadoD: [0.0, 0.47, 0.41],
+    pechoD: [0.10, 0.45, 0.42], sacudeD: [0.55, 0.75, 0.20],
+    garraI: [-0.66, 0.75, 0.20], garraD: [0.66, 0.75, 0.20],
+    garraAltaI: [-0.62, 0.82, 0.22], garraAltaD: [0.62, 0.82, 0.22],
+    punosPechoI: [-0.16, 0.50, 0.44], punosPechoD: [0.16, 0.50, 0.44],
+    cabezaI: [-0.46, 0.92, 0.10], cabezaD: [0.46, 0.92, 0.10],
+    mentonD: [0.06, 0.62, 0.42], corazonD: [0.05, 0.60, 0.42],
+    apuntaI: [-0.20, 0.55, 0.55], risaD: [0.06, 0.64, 0.42],
+  };
 
-  function cambiarBaile(b) {
-    baileActual = siguienteBaile();
-    inicioBaile = b;
-    // que no "desenrosque" todas las vueltas del trompo
-    actual.rotY = ((actual.rotY % PI2) + PI2) % PI2;
-    if (actual.rotY > PI) actual.rotY -= PI2;
-    mostrarCartel();
+  const COREO = [
+    // 0:04 entra con onda
+    { t: 0.00, I: M.abajoI, D: M.abajoD, hZ: 0.05 },
+    { t: 0.25, I: M.abajoI, D: M.abajoD, cZ: -0.06, hZ: -0.1 },
+    // 0:04.5 levanta la mano y saluda/abanica al costado de la cara
+    { t: 0.50, I: M.abajoI, D: M.saludoD, cZ: -0.1, hZ: -0.18, hY: -0.15, ojos: 0.75 },
+    { t: 0.75, I: M.abajoI, D: M.saludoAltoD, cX: -0.08, cZ: -0.12, hZ: -0.12, ojos: 0.75 },
+    // 0:05 manos abajo adelante, se inclina
+    { t: 1.00, I: M.pancitaI, D: M.pancitaD, cX: 0.15, hX: 0.12 },
+    // 0:05.25 señala con una mano, después con la otra a la cámara
+    { t: 1.25, I: M.senalaPechoI, D: M.abajoD, cY: -0.15, hY: -0.1 },
+    { t: 1.50, I: M.abajoI, D: M.senalaCentroD, cY: 0.1, cX: 0.1, hX: 0.05 },
+    // 0:05.75 enrolla las manos girando el torso
+    { t: 1.75, I: M.giraI, D: M.giraD, cY: 0.25, cZ: 0.06 },
+    { t: 2.00, I: M.giraI2, D: M.giraD2, cY: 0.3, cX: -0.08, hZ: 0.12, ojos: 0.75 },
+    // 0:06.25 aplauso
+    { t: 2.25, I: M.palmaI, D: M.palmaD, cY: 0.15, hX: -0.05 },
+    // 0:06.5 manotazo para abajo y "este" con el pulgar
+    { t: 2.50, I: M.abajoI, D: M.abajoCruzadoD, cX: 0.1 },
+    { t: 2.75, I: M.abajoI, D: M.pulgarD, hZ: 0.1 },
+    // 0:07 puño al mentón y el otro arriba
+    { t: 3.00, I: M.punoMentonI, D: M.punoArribaD, cY: -0.1, cX: 0.05, hY: -0.2, hZ: -0.08 },
+    // 0:07.25 palmas abiertas, 0:07.5 se encoge de hombros
+    { t: 3.25, I: M.abiertoI, D: M.abiertoD, hX: -0.05, ojos: 1.15 },
+    { t: 3.50, I: M.abajoAbiertoI, D: M.abajoAbiertoD, hX: 0.08 },
+    // 0:07.75 manos enmarcando la cara
+    { t: 3.75, I: M.marcoI, D: M.marcoD, hZ: 0.1, ojos: 0.75 },
+    // 0:08 cruza los brazos en X (abajo, arriba, abajo)
+    { t: 4.00, I: M.cruzI, D: M.cruzD, cX: 0.05 },
+    { t: 4.25, I: M.cruzAltaI, D: M.cruzAltaD, hX: 0.1 },
+    { t: 4.50, I: M.cruzI, D: M.cruzD, cX: 0.05 },
+    // 0:08.75 brazos pegados, 0:09 los abre bien abajo y menea los hombros
+    { t: 4.75, I: M.abajoJuntoI, D: M.abajoJuntoD },
+    { t: 5.00, I: M.anchoI, D: M.anchoD, hX: -0.1, ojos: 0.75 },
+    { t: 5.25, I: M.ancho2I, D: M.ancho2D, cZ: 0.06 },
+    { t: 5.50, I: M.ancho3I, D: M.ancho3D, cZ: -0.06 },
+    { t: 5.75, I: M.anchoI, D: M.anchoD, cZ: 0.1, hZ: 0.1 },
+    // 0:10 balancea los brazos cruzando el cuerpo y los pliega en el pecho
+    { t: 6.00, I: M.atrasI, D: M.cruzaD, cY: -0.35, hY: 0.25 },
+    { t: 6.25, I: M.balanceoI, D: M.cruzaD2, cY: -0.4, hY: 0.25 },
+    { t: 6.50, I: M.plegadoI, D: M.plegadoD, cY: -0.3, hZ: -0.1 },
+    { t: 6.75, I: M.abajoI, D: M.abajoCruzadoD, cY: -0.15 },
+    // 0:11 mano al pecho y sacudida al costado
+    { t: 7.00, I: M.abajoI, D: M.pechoD, cX: 0.05 },
+    { t: 7.25, I: M.abajoI, D: M.sacudeD, hZ: 0.08 },
+    // 0:11.5 «¡ay qué locura!»: manos en garra arriba, ojos grandes y lengua afuera
+    { t: 7.50, I: M.garraI, D: M.garraD, hX: -0.1, ojos: 1.35, lengua: 1 },
+    { t: 7.75, I: M.garraAltaI, D: M.garraAltaD, hX: 0.05, ojos: 1.35, lengua: 1 },
+    // 0:12 puños al pecho
+    { t: 8.00, I: M.punosPechoI, D: M.punosPechoD, cX: 0.08 },
+    // 0:12.25 manos a la cabeza y la sacude
+    { t: 8.25, I: M.cabezaI, D: M.cabezaD, hZ: 0.15, ojos: 0.5 },
+    { t: 8.50, I: M.cabezaI, D: M.cabezaD, hZ: -0.15, ojos: 0.3 },
+    { t: 8.75, I: M.cabezaI, D: M.cabezaD, hZ: 0.12, hX: 0.1, ojos: 0.3 },
+    // 0:13 mano en el mentón (pensando) y en el pecho
+    { t: 9.00, I: M.abajoI, D: M.mentonD, hZ: 0.1, hX: 0.05, ojos: 0.9 },
+    { t: 9.50, I: M.abajoI, D: M.corazonD, cY: 0.15 },
+    // 0:14 se acerca señalando a la cámara y se ríe
+    { t: 10.00, I: M.apuntaI, D: M.abajoD, cX: 0.18, hX: 0.1 },
+    { t: 10.50, I: M.abajoI, D: M.risaD, cX: 0.15, hX: 0.2, ojos: 0.4 },
+    { t: 11.00, I: M.abajoI, D: M.abajoD, cX: 0.05 },
+  ];
+  const DURACION_BAILE = 11.25;          // al final vuelve a la pose del principio: loop sin cortes
+  const TIEMPO = 0.5;                    // un tiempo de la música (s)
+  const ESCALARES = ["cX", "cY", "cZ", "hX", "hY", "hZ", "ojos", "lengua"];
+  const VALOR_BASE = { ojos: 1 };
+
+  // Interpolación suave (Hermite) entre pasos, con tangentes de los vecinos.
+  // El baile da la vuelta: después del último paso viene el primero.
+  function vecino(i) {
+    const n = COREO.length;
+    const vueltas = Math.floor(i / n);
+    const k = COREO[((i % n) + n) % n];
+    return { k, t: k.t + vueltas * DURACION_BAILE };
+  }
+  function valor(k, clave, eje) {
+    if (eje !== undefined) return k[clave][eje];
+    return k[clave] !== undefined ? k[clave] : (VALOR_BASE[clave] || 0);
+  }
+  function hermite(t, i, clave, eje) {
+    const a = vecino(i - 1), b = vecino(i), c = vecino(i + 1), d = vecino(i + 2);
+    const h = c.t - b.t;
+    const u = (t - b.t) / h;
+    const p1 = valor(b.k, clave, eje), p2 = valor(c.k, clave, eje);
+    const m1 = ((p2 - valor(a.k, clave, eje)) / (c.t - a.t)) * h * 0.85;
+    const m2 = ((valor(d.k, clave, eje) - p1) / (d.t - b.t)) * h * 0.85;
+    const u2 = u * u, u3 = u2 * u;
+    return (2 * u3 - 3 * u2 + 1) * p1 + (u3 - 2 * u2 + u) * m1 + (-2 * u3 + 3 * u2) * p2 + (u3 - u2) * m2;
   }
 
-  function bailar(t, dt) {
-    const b = (t * BPM) / 60;      // tiempo en beats
-    const f = b * PI2;             // una vuelta completa por beat
+  const manoBaileI = new THREE.Vector3();
+  const manoBaileD = new THREE.Vector3();
+  function baileLocura(u, p) {
+    // u: segundos desde que empezó el baile
+    const t = ((u % DURACION_BAILE) + DURACION_BAILE) % DURACION_BAILE;
+    let i = 0;
+    while (i < COREO.length - 1 && COREO[i + 1].t <= t) i++;
+    for (let e = 0; e < 3; e++) {
+      manoBaileI.setComponent(e, hermite(t, i, "I", e));
+      manoBaileD.setComponent(e, hermite(t, i, "D", e));
+    }
+    ESCALARES.forEach(clave => { p[clave] = hermite(t, i, clave); });
 
-    if (cambiarAhora || b - inicioBaile >= BEATS_POR_BAILE) {
-      cambiarAhora = false;
-      cambiarBaile(b);
+    // Onda de fondo al ritmo: rebote en cada tiempo, cadera que va y viene,
+    // hombros que tiemblan y pasitos en el lugar.
+    const fase = (t / TIEMPO) * PI;
+    const rebote = Math.abs(Math.sin(fase));
+    p.cZ += Math.sin(fase) * 0.05;
+    p.cY += Math.sin(fase * 2) * 0.04;
+    p.hX += rebote * 0.05;
+    p.pIX = -Math.max(0, Math.sin(fase)) * 0.28;
+    p.pDX = -Math.max(0, -Math.sin(fase)) * 0.28;
+    return { y: rebote * 0.05, aplaste: (1 - rebote) * 0.035 };
+  }
+
+  // ---------- Brazos: de "dónde quiero la mano" a ángulos de hombro y codo ----------
+  const ABAJO = new THREE.Vector3(0, -1, 0);
+  const _dir = new THREE.Vector3(), _perp = new THREE.Vector3(), _codo = new THREE.Vector3();
+  const _sup = new THREE.Vector3(), _inf = new THREE.Vector3(), _q = new THREE.Quaternion();
+  function moverBrazo(b, mano, pista) {
+    // Cinemática inversa de dos huesos, en el espacio del torso
+    const S = b.hombro.position;
+    _dir.subVectors(mano, S);
+    const d = Math.min(Math.max(_dir.length(), 0.08), LARGO_BRAZO - 0.0005);
+    _dir.normalize();
+    const cosA = Math.min(1, Math.max(-1, (BRAZO_SUP * BRAZO_SUP + d * d - ANTEBRAZO * ANTEBRAZO) / (2 * BRAZO_SUP * d)));
+    const a = Math.acos(cosA);
+    _perp.copy(pista).addScaledVector(_dir, -pista.dot(_dir));
+    if (_perp.lengthSq() < 1e-6) _perp.set(0, 0, -1);
+    _perp.normalize();
+    _codo.copy(S).addScaledVector(_dir, BRAZO_SUP * Math.cos(a)).addScaledVector(_perp, BRAZO_SUP * Math.sin(a));
+    _sup.subVectors(_codo, S).normalize();
+    b.hombro.quaternion.setFromUnitVectors(ABAJO, _sup);
+    _inf.copy(S).addScaledVector(_dir, d).sub(_codo).normalize();
+    _q.copy(b.hombro.quaternion).invert();
+    _inf.applyQuaternion(_q);
+    b.codo.quaternion.setFromUnitVectors(ABAJO, _inf.normalize());
+  }
+
+  // Mano según los ángulos de las partes "de escena" (brazo estirado)
+  const _euler = new THREE.Euler();
+  function manoPorAngulos(b, ax, az, out) {
+    _euler.set(ax, 0, az);
+    return out.set(0, -LARGO_BRAZO, 0).applyEuler(_euler).add(b.hombro.position);
+  }
+
+  // Hacia dónde apunta el codo: afuera y atrás; si la mano está alta, afuera y abajo
+  function pistaCodo(b, mano, out) {
+    const k = clamp01((mano.y - 0.5) / 0.3);
+    return out.set(b.lado, -0.45 - 0.45 * k, -0.4 + 0.3 * k);
+  }
+
+  function escenaEn(c, alturaColgado) {
+    // Devuelve la pose objetivo, la altura (y) y el aplastado para el momento c del ciclo
+    const p = Object.assign({}, NEUTRO);
+    let y = 0, aplaste = 0, rapido = false, baila = false;
+
+    if (c < T.vuelta) {
+      // Mira la tarjeta, respira y da saltitos de ganas
+      p.hX = -0.38;
+      aplaste = Math.sin(c * 4) * 0.015;
+      y = lomo(c, 1.1, 0.3, 0.07) + lomo(c, 1.45, 0.3, 0.07);
+      p.aIZ = -0.35; p.aDZ = 0.35;
+    } else if (c < T.agacha) {
+      // Se da vuelta para quedar de espaldas, mirando la tarjeta
+      p.giro = PI;
+      p.hX = -0.3;
+      y = lomo(c, T.vuelta, 0.3, 0.08);
+    } else if (c < T.salta) {
+      // Se agacha para tomar impulso
+      const k = salida(prog(c, T.agacha, T.salta));
+      p.giro = PI;
+      aplaste = 0.2 * k;
+      p.cX = 0.25; p.hX = -0.45;
+      p.aIX = 0.7; p.aDX = 0.7; p.aIZ = -0.4; p.aDZ = 0.4;
+      p.pIZ = -0.16; p.pDZ = 0.16;
+      rapido = true;
+    } else if (c < T.agarra) {
+      // ¡Salta de espaldas!
+      const k = prog(c, T.salta, T.agarra);
+      p.giro = PI;
+      y = alturaColgado * salida(k);
+      aplaste = -0.14 * (1 - k);
+      p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = 0.35; p.pDX = 0.2; p.hX = -0.3;
+      rapido = true;
+    } else if (c < T.cuelga) {
+      // Se agarra del borde con un tironcito
+      const k = prog(c, T.agarra, T.cuelga);
+      p.giro = PI;
+      y = alturaColgado - Math.sin(k * PI) * 0.06;
+      p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = -0.3; p.pDX = 0.3;
+      rapido = true;
+    } else if (c < T.resbala) {
+      // Colgado: patalea, se balancea e intenta subir dos veces
+      const u = c - T.cuelga;
+      p.giro = PI;
+      y = alturaColgado + lomo(u, 0.7, 0.55, 0.1) + lomo(u, 1.6, 0.55, 0.12);
+      p.colgZ = Math.sin(u * 3.2) * 0.1;
+      p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = Math.sin(u * 12) * 0.55; p.pDX = -Math.sin(u * 12) * 0.55;
+      p.pIZ = -0.12; p.pDZ = 0.12;
+      p.hX = -0.1;
+    } else if (c < T.cae) {
+      // Se le resbala una mano y manotea
+      const k = prog(c, T.resbala, T.cae);
+      p.giro = PI;
+      y = alturaColgado - 0.05 * k;
+      p.colgZ = -0.32 * salida(k) + Math.sin(c * 22) * 0.04;
+      p.aIZ = -1.4 + Math.sin(c * 30) * 0.5; p.aIX = Math.sin(c * 26) * 0.4;
+      p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = Math.sin(c * 18) * 0.7; p.pDX = -Math.sin(c * 18) * 0.7;
+      p.ojos = 1.35;
+      rapido = true;
+    } else if (c < T.golpe) {
+      // Se cae
+      const k = prog(c, T.cae, T.golpe);
+      p.giro = PI + k * 0.6;
+      y = (alturaColgado - 0.05) * (1 - entrada(k));
+      p.aIZ = -2.4 + Math.sin(c * 25) * 0.45; p.aDZ = 2.4 + Math.sin(c * 25 + 1.3) * 0.45;
+      p.pIX = -0.6; p.pDX = 0.4;
+      p.ojos = 1.4;
+      rapido = true;
+    } else if (c < T.rearma) {
+      // ¡Pum! Se desarmó: el cuerpo cae (desde donde estaba) y queda en el piso, medio de costado
+      const u = c - T.golpe;
+      p.giro = giroAlDesarmar;
+      p.tumbo = 0.35;
+      const g = 14;
+      const caida = yAlDesarmar - 0.5 * g * u * u;
+      const tPiso = Math.sqrt(Math.max(0, 2 * (yAlDesarmar - TORSO_EN_EL_PISO) / g));
+      if (caida > TORSO_EN_EL_PISO) {
+        y = caida;
+      } else {
+        const v = u - tPiso;
+        y = TORSO_EN_EL_PISO + Math.max(0, Math.sin(Math.min(v / 0.35, 1) * PI)) * 0.2 * Math.max(0, 1 - v / 0.35);
+        aplaste = Math.max(0, 0.18 * (1 - v / 0.25));
+      }
+      rapido = true;
+    } else if (c < T.festeja) {
+      // Las piezas vuelven volando; el cuerpo se endereza y mira para adelante
+      const k = prog(c, T.rearma, T.festeja);
+      p.giro = 0;
+      y = TORSO_EN_EL_PISO * (1 - suave(clamp01(k / 0.45)));
+      p.ojos = 1.2;
+    } else if (c < T.baile) {
+      // ¡Ta-dá!
+      const k = prog(c, T.festeja, T.baile);
+      y = lomo(k, 0, 1, 0.22);
+      p.aIZ = -2.5; p.aDZ = 2.5;
+      p.hX = -0.15;
+      aplaste = k > 0.9 ? 0.06 : 0;
+      p.ojos = 1.1;
+    } else {
+      // Baile «Ay qué locura»
+      const r = baileLocura(c - T.baile, p);
+      y = r.y;
+      aplaste = r.aplaste;
+      rapido = true;
+      baila = true;
+    }
+    return { p, y, aplaste, rapido, baila };
+  }
+
+  // ---------- Animar ----------
+  let cAnterior = 0;
+  let pesoBaile = 0;
+  const manoI = new THREE.Vector3(), manoD = new THREE.Vector3();
+  const pistaI = new THREE.Vector3(), pistaD = new THREE.Vector3();
+  function animar(t, dt) {
+    medir();
+    const alturaColgado = bordeY - 0.03 - ALTURA_MANOS - pisoY;   // cuánto sube hasta agarrarse
+
+    // Si la tarjeta muestra el resultado del sorteo, no se cuelga para no taparlo: baila.
+    let c = (t - inicio) % CICLO;
+    if (c >= T.vuelta && cAnterior < T.vuelta && ruleta && ruleta.classList.contains("ganador")) {
+      inicio = t - T.baile;
+      c = T.baile;
     }
 
-    const baile = BAILES[baileActual];
-    const objetivo = baile.pose(b - inicioBaile, f);
+    // Eventos: desarmarse al tocar el piso, rearmarse después
+    const enPiezas = c >= T.golpe && c < T.festeja;
+    if (enPiezas && estado === "armado" && c < T.rearma) {
+      yAlDesarmar = Math.max(ultimaY, TORSO_EN_EL_PISO);
+      giroAlDesarmar = actual.giro;
+      desarmar();
+    }
+    if (estado === "desarmado" && c >= T.rearma && c < T.festeja) empezarRearmado();
+    if (!enPiezas && estado !== "armado") terminarRearmado();
+    cAnterior = c;
 
-    // Pasar suave hacia la pose (el robot es más brusco a propósito)
-    const k = dt === 0 ? 1 : 1 - Math.exp(-dt * (baile.rapido ? 30 : 14));
+    const { p: objetivo, y, aplaste, rapido, baila } = escenaEn(c, alturaColgado);
+    ultimaY = y;
+
+    // Pasar suave a la pose (más rápido en los momentos bruscos)
+    const k = dt === 0 ? 1 : 1 - Math.exp(-dt * (rapido ? 24 : 11));
     for (const clave in objetivo) actual[clave] += (objetivo[clave] - actual[clave]) * k;
     const p = actual;
+    // Entrada y salida suave del baile
+    pesoBaile += ((baila ? 1 : 0) - pesoBaile) * (dt === 0 ? 1 : 1 - Math.exp(-dt * 7));
 
-    // Recorrido en círculo por la pista
-    const ang = t * 0.9;
-    santa.position.set(Math.sin(ang) * 0.42 * p.camina + p.x, 0, Math.cos(ang) * 0.22 * p.camina);
-    santa.rotation.y = p.rotY + Math.sin(ang) * 0.3 * p.camina;
-
-    // Salto (con aplastado y estirado) y salto grande con giro al tocarlo
-    const saltoGrande = t < saltoHasta ? Math.sin(((saltoHasta - t) / 0.6) * PI) * 0.5 : 0;
-    const altura = p.y + saltoGrande;
-    rebote.position.y = altura;
-    const aplaste = Math.max(0, 0.06 - altura) * 1.2;
-    rebote.scale.set(1 + aplaste, 1 - aplaste * 1.3, 1 + aplaste);
-    rebote.rotation.y = saltoGrande > 0 ? (1 - (saltoHasta - t) / 0.6) * PI2 : 0;
-
+    santa.position.set(0, pisoY + y, 0);
+    santa.rotation.set(0, p.giro, p.tumbo);
+    colgador.rotation.set(p.colgX, 0, p.colgZ);
+    cuerpo.scale.set(1 + aplaste * 0.6, 1 - aplaste, 1 + aplaste * 0.6);
     cadera.rotation.set(p.cX, p.cY, p.cZ);
-    cabeza.rotation.set(p.hX, p.hY, p.hZ);
-    brazoIzq.hombro.rotation.set(p.aIX, p.aIY, p.aIZ);
-    brazoDer.hombro.rotation.set(p.aDX, p.aDY, p.aDZ);
-    brazoIzq.codo.rotation.x = p.cdI;
-    brazoDer.codo.rotation.x = p.cdD;
-    piernaIzq.rotation.set(p.pIX, 0, p.pIZ);
-    piernaDer.rotation.set(p.pDX, 0, p.pDZ);
+    const l = Math.max(0.001, p.lengua);
+    lengua.scale.set(0.9 * l, 0.6 * l, 1.1 * l);
 
-    // El gorro se dobla y se bambolea (cada segmento un poco más)
-    const vaiven = Math.sin(f - 1);
-    segmentos.forEach((s, i) => {
-      s.rotation.z = -0.2 - vaiven * 0.1 - p.cZ * 0.3 - (i * 0.03);
-      s.rotation.x = Math.cos(f - 1) * 0.06 + p.cX * 0.15;
+    if (estado === "armado") {
+      cabeza.rotation.set(p.hX, p.hY, p.hZ);
+      // Brazos: mezcla entre la pose "de escena" y la del baile, y de ahí hombro + codo
+      manoPorAngulos(brazoIzq, p.aIX, p.aIZ, manoI);
+      manoPorAngulos(brazoDer, p.aDX, p.aDZ, manoD);
+      if (pesoBaile > 0.001) {
+        manoI.lerp(manoBaileI, pesoBaile);
+        manoD.lerp(manoBaileD, pesoBaile);
+      }
+      moverBrazo(brazoIzq, manoI, pistaCodo(brazoIzq, manoI, pistaI));
+      moverBrazo(brazoDer, manoD, pistaCodo(brazoDer, manoD, pistaD));
+      piernaIzq.rotation.set(p.pIX, 0, p.pIZ);
+      piernaDer.rotation.set(p.pDX, 0, p.pDZ);
+      gorro.rotation.set(0, 0, -0.12);
+    } else if (estado === "desarmado") {
+      moverPiezas(dt, anchoMundo / 2 - 0.35);
+    } else {
+      rearmar(prog(c, T.rearma, T.festeja));
+    }
+
+    // Ojos: parpadeo y ojos grandes del susto
+    const parpadeo = (t % 3.2) < 0.12 ? 0.15 : 1;
+    [ojoIzq, ojoDer].forEach(o => o.scale.set(p.ojos, p.ojos * parpadeo, p.ojos));
+
+    // Punta del gorro
+    punta.rotation.z = Math.sin(t * 3) * 0.25 - 0.3;
+    punta.rotation.x = Math.cos(t * 3) * 0.12;
+
+    // Estrellitas girando sobre la cabeza tirada en el piso
+    const mostrarEstrellas = estado === "desarmado" && c > T.golpe + 0.5;
+    if (mostrarEstrellas) {
+      cabeza.updateMatrixWorld(true);
+      v.set(0, 0.3, 0);
+      cabeza.localToWorld(v);
+    }
+    estrellas.forEach((e, i) => {
+      e.visible = mostrarEstrellas;
+      if (!mostrarEstrellas) return;
+      const a = t * 4 + (i * PI * 2) / estrellas.length;
+      e.position.set(v.x + Math.cos(a) * 0.5, v.y + 0.55 + Math.sin(a * 2) * 0.05, v.z + Math.sin(a) * 0.35);
+      e.lookAt(camara.position);
+      e.rotation.z += t * 3;
     });
 
-    // Parpadeo
-    const parpadeo = (t % 3.4) < 0.12 ? 0.12 : 1;
-    ojos.forEach(o => { o.scale.y = parpadeo; });
-
-    // Pista y luces
-    pista.material.color.setHSL((t * 0.08) % 1, 0.9, 0.55);
-    aro.rotation.z = t * 0.5;
-    lucesDisco.forEach((l, i) => {
-      const a = t * 1.3 + (i * PI2) / lucesDisco.length;
-      l.position.set(Math.cos(a) * 1.9, 1.3 + Math.sin(t * 2 + i) * 0.4, Math.sin(a) * 1.9);
-    });
+    // Sombra en el piso: más chica y suave cuanto más alto está
+    sombra.position.set(santa.position.x, pisoY + 0.002, 0);
+    const alto = Math.max(0, y);
+    const s = Math.max(0.25, 1 - alto * 0.35);
+    sombra.scale.set(s, s, s);
+    sombra.material.opacity = Math.max(0.25, 1 - alto * 0.3);
   }
 
-  // ---------- Animación (solo cuando se ve) ----------
+  // ---------- Bucle (solo cuando se ve) ----------
   let visible = true;
   if ("IntersectionObserver" in window) {
     new IntersectionObserver(entradas => { visible = entradas[0].isIntersecting; }).observe(contenedor);
@@ -549,14 +844,14 @@
     requestAnimationFrame(cuadro);
     if (!visible || document.hidden) return;
     const t = reloj.getElapsedTime();
-    const dt = Math.min(t - anterior, 0.05);
+    const dt = Math.min(Math.max(t - anterior, 0), 0.05);
     anterior = t;
-    bailar(t, dt);
+    animar(t, dt);
     renderer.render(escena, camara);
   }
 
   if (quieto) {
-    bailar(0.3, 0);
+    animar(0.5, 0);
     renderer.render(escena, camara);
   } else {
     cuadro();
