@@ -790,7 +790,7 @@ iniciar();
 // Un Santa petiso y cabezón que vive abajo de la tarjeta:
 //   mira la tarjeta → se da vuelta → salta de espaldas y se cuelga del borde →
 //   patalea → se resbala y se cae → al chocar el piso SE DESARMA en piezas →
-//   las piezas vuelven volando y se REARMA → festeja → BAILA → y vuelta a empezar.
+//   las piezas vuelven volando y se REARMA → festeja → baila «AY QUÉ LOCURA» → y vuelta a empezar.
 // Tocalo mientras mira la tarjeta para que salte enseguida.
 // Si la tarjeta muestra el resultado del sorteo, no se cuelga para no taparlo:
 // directamente baila.
@@ -868,7 +868,11 @@ iniciar();
 
   // ---------- Mini Santa ----------
   // santa (posición) > colgador (pivote en las manos, para balancearse colgado) > cuerpo (origen en los pies)
-  const ALTURA_MANOS = 1.2;            // altura de los guantes con los brazos arriba
+  const BRAZO_SUP = 0.21;              // hombro → codo
+  const ANTEBRAZO = 0.265;             // codo → centro del guante
+  const LARGO_BRAZO = BRAZO_SUP + ANTEBRAZO;
+  const BRAZOS_ARRIBA = 2.95;          // ángulo de los brazos estirados para arriba
+  const ALTURA_MANOS = 0.36 + 0.48 + LARGO_BRAZO * Math.cos(PI - BRAZOS_ARRIBA);   // guantes con los brazos arriba
   const santa = new THREE.Group();
   const colgador = new THREE.Group();
   colgador.position.y = ALTURA_MANOS;
@@ -921,24 +925,34 @@ iniciar();
   colita.position.set(0, 0.12, -0.38);
   cadera.add(panza, ruedo, cinturon, hebilla, colita, ...botones);
 
-  // Brazos
+  // Brazos con codo (hombro > brazo > codo > antebrazo, puño de piel y guante con pulgar)
   function brazo(lado) {
     const hombro = new THREE.Group();
-    hombro.position.set(0.36 * lado, 0.47, 0);
+    hombro.position.set(0.33 * lado, 0.48, 0.1);
     hombro.rotation.z = 0.25 * lado;
-    const manga = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.3, 14), rojo);
-    manga.position.y = -0.15;
-    const puno = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.035, 8, 20), blanco);
+    const bolaHombro = esfera(0.09, rojo, 16);
+    const brazoSup = new THREE.Mesh(new THREE.CylinderGeometry(0.088, 0.08, BRAZO_SUP, 14), rojo);
+    brazoSup.position.y = -BRAZO_SUP / 2;
+    const codo = new THREE.Group();
+    codo.position.y = -BRAZO_SUP;
+    const bolaCodo = esfera(0.08, rojo, 14);
+    const largoAnte = ANTEBRAZO - 0.08;
+    const antebrazo = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.074, largoAnte, 14), rojo);
+    antebrazo.position.y = -largoAnte / 2;
+    const puno = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.035, 8, 20), blanco);
     puno.rotation.x = PI / 2;
-    puno.position.y = -0.3;
+    puno.position.y = -ANTEBRAZO + 0.075;
     const guante = esfera(0.1, verde, 16);
-    guante.position.y = -0.38;
-    hombro.add(manga, puno, guante);
+    guante.position.y = -ANTEBRAZO;
+    const pulgar = esfera(0.042, verde, 12);
+    pulgar.position.set(-0.07 * lado, -ANTEBRAZO + 0.03, 0.05);
+    codo.add(bolaCodo, antebrazo, puno, guante, pulgar);
+    hombro.add(bolaHombro, brazoSup, codo);
     cadera.add(hombro);
-    return hombro;
+    return { hombro, codo, lado };
   }
-  const brazoIzq = brazo(-1);
-  const brazoDer = brazo(1);
+  const brazoIzq = brazo(-1);   // el de la izquierda de la pantalla
+  const brazoDer = brazo(1);    // el de la derecha de la pantalla
 
   // Cabeza (bien grande, estilo chibi)
   const cabeza = new THREE.Group();
@@ -984,7 +998,11 @@ iniciar();
   const cejaDer = cejaIzq.clone();
   cejaDer.rotation.z = -0.25;
   cejaDer.position.x = 0.13;
-  cabeza.add(cara, barba, bigoteIzq, bigoteDer, nariz, mejillaIzq, mejillaDer, ojoIzq, ojoDer, cejaIzq, cejaDer);
+  // Lengua (sale en la parte "¡qué locura!" del baile)
+  const lengua = esfera(0.05, mat(0xff6b81), 14);
+  lengua.position.set(0, 0.15, 0.35);
+  lengua.scale.setScalar(0.001);
+  cabeza.add(cara, barba, lengua, bigoteIzq, bigoteDer, nariz, mejillaIzq, mejillaDer, ojoIzq, ojoDer, cejaIzq, cejaDer);
 
   // Gorro con punta que se bambolea
   const gorro = new THREE.Group();
@@ -1033,8 +1051,8 @@ iniciar();
   const PIEZAS = [
     { obj: piernaIzq, padre: cuerpo, radio: 0.16, centro: new THREE.Vector3(0, -0.17, 0.03), vel: [-1.5, 2.0, 0.5], demora: 0 },
     { obj: piernaDer, padre: cuerpo, radio: 0.16, centro: new THREE.Vector3(0, -0.17, 0.03), vel: [1.6, 2.2, 0.4], demora: 0.04 },
-    { obj: brazoIzq, padre: cadera, radio: 0.12, centro: new THREE.Vector3(0, -0.22, 0), vel: [-2.2, 2.8, 0.4], demora: 0.12 },
-    { obj: brazoDer, padre: cadera, radio: 0.12, centro: new THREE.Vector3(0, -0.22, 0), vel: [2.2, 3.0, 0.3], demora: 0.16 },
+    { obj: brazoIzq.hombro, padre: cadera, radio: 0.12, centro: new THREE.Vector3(0, -0.25, 0), vel: [-2.2, 2.8, 0.4], demora: 0.12 },
+    { obj: brazoDer.hombro, padre: cadera, radio: 0.12, centro: new THREE.Vector3(0, -0.25, 0), vel: [2.2, 3.0, 0.3], demora: 0.16 },
     { obj: cabeza, padre: cadera, radio: 0.4, centro: new THREE.Vector3(0, 0.3, 0), vel: [-0.7, 3.8, 0.4], demora: 0.26 },
     { obj: gorro, padre: cabeza, radio: 0.24, centro: new THREE.Vector3(0, 0.22, 0), vel: [0.9, 4.6, 0.2], demora: 0.4 },
   ];
@@ -1168,7 +1186,7 @@ iniciar();
   const reloj = new THREE.Clock();
   const T = {
     mira: 0, vuelta: 2.2, agacha: 2.6, salta: 2.95, agarra: 3.4, cuelga: 3.55,
-    resbala: 5.9, cae: 6.3, golpe: 6.75, rearma: 8.3, festeja: 9.5, baile: 10.0, fin: 15.0,
+    resbala: 5.9, cae: 6.3, golpe: 6.75, rearma: 8.3, festeja: 9.5, baile: 10.0, fin: 21.25,   // el baile dura 11,25 s
   };
   const CICLO = T.fin;
   let inicio = 0;
@@ -1187,33 +1205,209 @@ iniciar();
   const prog = (c, a, b) => clamp01((c - a) / (b - a));
 
   const NEUTRO = {
-    giro: 0, tumbo: 0, colgZ: 0, colgX: 0, cX: 0, cZ: 0, hX: 0, hZ: 0,
+    giro: 0, tumbo: 0, colgZ: 0, colgX: 0, cX: 0, cY: 0, cZ: 0, hX: 0, hY: 0, hZ: 0,
     aIX: 0, aIZ: -0.25, aDX: 0, aDZ: 0.25,
     pIX: 0, pIZ: -0.08, pDX: 0, pDZ: 0.08,
-    ojos: 1,
+    ojos: 1, lengua: 0,
   };
   const actual = Object.assign({}, NEUTRO);
-  const BRAZOS_ARRIBA = 2.95;
   const TORSO_EN_EL_PISO = -0.27;   // altura del cuerpo sin piernas, apoyado en el piso
 
-  // ---------- Baile final ----------
-  // (Provisorio: acá va el baile que pida el usuario.)
-  function baileFinal(u, p) {
-    const beat = u * 2.2 * PI;
-    p.giro = Math.sin(u * 1.1) * 0.5;
-    p.cZ = Math.sin(beat) * 0.18;
-    p.hZ = -Math.sin(beat) * 0.12;
-    p.aIZ = -1.2 - Math.sin(beat) * 0.6;
-    p.aDZ = 1.2 - Math.sin(beat) * 0.6;
-    p.pIX = Math.max(0, Math.sin(beat)) * -0.5;
-    p.pDX = Math.max(0, -Math.sin(beat)) * -0.5;
-    return Math.abs(Math.sin(beat)) * 0.08;      // altura del saltito
+  // =====================================================
+  // BAILE «AY QUÉ LOCURA»
+  // Coreografía sacada cuadro por cuadro del video de referencia (de 0:04 a 0:15),
+  // a un tiempo cada 0,5 s. Cada paso dice dónde van las manos (I = mano de la
+  // izquierda de la pantalla, D = mano de la derecha), cuánto se inclina/gira el
+  // torso (cX adelante, cY giro, cZ costado), la cabeza (hX asiente, hY gira,
+  // hZ ladea), los ojos (1 normal, <1 sonriendo, >1 abiertos) y la lengua.
+  // Las posiciones son relativas al torso del Santa (x costado, y altura, z adelante).
+  // =====================================================
+  const M = {
+    abajoI: [-0.44, 0.10, 0.12], abajoD: [0.44, 0.10, 0.12],
+    abajoAbiertoI: [-0.5, 0.12, 0.18], abajoAbiertoD: [0.5, 0.12, 0.18],
+    abajoJuntoI: [-0.40, 0.08, 0.06], abajoJuntoD: [0.40, 0.08, 0.06],
+    saludoD: [0.62, 0.80, 0.12], saludoAltoD: [0.56, 0.90, 0.22],
+    pancitaI: [-0.14, 0.22, 0.43], pancitaD: [0.14, 0.22, 0.43],
+    senalaPechoI: [-0.30, 0.45, 0.42], senalaCentroD: [0.06, 0.50, 0.44],
+    giraI: [0.0, 0.40, 0.42], giraI2: [0.0, 0.35, 0.42], giraD: [0.30, 0.38, 0.42], giraD2: [0.42, 0.30, 0.38],
+    palmaI: [-0.04, 0.50, 0.42], palmaD: [0.04, 0.50, 0.44],
+    abajoCruzadoD: [0.20, 0.18, 0.42], pulgarD: [0.12, 0.50, 0.44],
+    punoMentonI: [-0.08, 0.62, 0.42], punoArribaD: [0.48, 0.90, 0.15],
+    abiertoI: [-0.50, 0.55, 0.38], abiertoD: [0.50, 0.55, 0.38],
+    marcoI: [-0.28, 0.70, 0.36], marcoD: [0.30, 0.84, 0.30],
+    cruzI: [0.0, 0.62, 0.38], cruzD: [0.0, 0.66, 0.41],
+    cruzAltaI: [0.0, 0.80, 0.33], cruzAltaD: [0.0, 0.82, 0.36],
+    anchoI: [-0.70, 0.20, 0.10], anchoD: [0.70, 0.20, 0.10],
+    ancho2I: [-0.66, 0.16, 0.18], ancho2D: [0.66, 0.16, 0.18],
+    ancho3I: [-0.60, 0.14, 0.22], ancho3D: [0.60, 0.14, 0.22],
+    atrasI: [-0.48, 0.15, -0.15], cruzaD: [0.0, 0.42, 0.42],
+    balanceoI: [-0.50, 0.25, 0.25], cruzaD2: [0.0, 0.38, 0.42],
+    plegadoI: [0.0, 0.40, 0.43], plegadoD: [0.0, 0.47, 0.41],
+    pechoD: [0.10, 0.45, 0.42], sacudeD: [0.55, 0.75, 0.20],
+    garraI: [-0.66, 0.75, 0.20], garraD: [0.66, 0.75, 0.20],
+    garraAltaI: [-0.62, 0.82, 0.22], garraAltaD: [0.62, 0.82, 0.22],
+    punosPechoI: [-0.16, 0.50, 0.44], punosPechoD: [0.16, 0.50, 0.44],
+    cabezaI: [-0.46, 0.92, 0.10], cabezaD: [0.46, 0.92, 0.10],
+    mentonD: [0.06, 0.62, 0.42], corazonD: [0.05, 0.60, 0.42],
+    apuntaI: [-0.20, 0.55, 0.55], risaD: [0.06, 0.64, 0.42],
+  };
+
+  const COREO = [
+    // 0:04 entra con onda
+    { t: 0.00, I: M.abajoI, D: M.abajoD, hZ: 0.05 },
+    { t: 0.25, I: M.abajoI, D: M.abajoD, cZ: -0.06, hZ: -0.1 },
+    // 0:04.5 levanta la mano y saluda/abanica al costado de la cara
+    { t: 0.50, I: M.abajoI, D: M.saludoD, cZ: -0.1, hZ: -0.18, hY: -0.15, ojos: 0.75 },
+    { t: 0.75, I: M.abajoI, D: M.saludoAltoD, cX: -0.08, cZ: -0.12, hZ: -0.12, ojos: 0.75 },
+    // 0:05 manos abajo adelante, se inclina
+    { t: 1.00, I: M.pancitaI, D: M.pancitaD, cX: 0.15, hX: 0.12 },
+    // 0:05.25 señala con una mano, después con la otra a la cámara
+    { t: 1.25, I: M.senalaPechoI, D: M.abajoD, cY: -0.15, hY: -0.1 },
+    { t: 1.50, I: M.abajoI, D: M.senalaCentroD, cY: 0.1, cX: 0.1, hX: 0.05 },
+    // 0:05.75 enrolla las manos girando el torso
+    { t: 1.75, I: M.giraI, D: M.giraD, cY: 0.25, cZ: 0.06 },
+    { t: 2.00, I: M.giraI2, D: M.giraD2, cY: 0.3, cX: -0.08, hZ: 0.12, ojos: 0.75 },
+    // 0:06.25 aplauso
+    { t: 2.25, I: M.palmaI, D: M.palmaD, cY: 0.15, hX: -0.05 },
+    // 0:06.5 manotazo para abajo y "este" con el pulgar
+    { t: 2.50, I: M.abajoI, D: M.abajoCruzadoD, cX: 0.1 },
+    { t: 2.75, I: M.abajoI, D: M.pulgarD, hZ: 0.1 },
+    // 0:07 puño al mentón y el otro arriba
+    { t: 3.00, I: M.punoMentonI, D: M.punoArribaD, cY: -0.1, cX: 0.05, hY: -0.2, hZ: -0.08 },
+    // 0:07.25 palmas abiertas, 0:07.5 se encoge de hombros
+    { t: 3.25, I: M.abiertoI, D: M.abiertoD, hX: -0.05, ojos: 1.15 },
+    { t: 3.50, I: M.abajoAbiertoI, D: M.abajoAbiertoD, hX: 0.08 },
+    // 0:07.75 manos enmarcando la cara
+    { t: 3.75, I: M.marcoI, D: M.marcoD, hZ: 0.1, ojos: 0.75 },
+    // 0:08 cruza los brazos en X (abajo, arriba, abajo)
+    { t: 4.00, I: M.cruzI, D: M.cruzD, cX: 0.05 },
+    { t: 4.25, I: M.cruzAltaI, D: M.cruzAltaD, hX: 0.1 },
+    { t: 4.50, I: M.cruzI, D: M.cruzD, cX: 0.05 },
+    // 0:08.75 brazos pegados, 0:09 los abre bien abajo y menea los hombros
+    { t: 4.75, I: M.abajoJuntoI, D: M.abajoJuntoD },
+    { t: 5.00, I: M.anchoI, D: M.anchoD, hX: -0.1, ojos: 0.75 },
+    { t: 5.25, I: M.ancho2I, D: M.ancho2D, cZ: 0.06 },
+    { t: 5.50, I: M.ancho3I, D: M.ancho3D, cZ: -0.06 },
+    { t: 5.75, I: M.anchoI, D: M.anchoD, cZ: 0.1, hZ: 0.1 },
+    // 0:10 balancea los brazos cruzando el cuerpo y los pliega en el pecho
+    { t: 6.00, I: M.atrasI, D: M.cruzaD, cY: -0.35, hY: 0.25 },
+    { t: 6.25, I: M.balanceoI, D: M.cruzaD2, cY: -0.4, hY: 0.25 },
+    { t: 6.50, I: M.plegadoI, D: M.plegadoD, cY: -0.3, hZ: -0.1 },
+    { t: 6.75, I: M.abajoI, D: M.abajoCruzadoD, cY: -0.15 },
+    // 0:11 mano al pecho y sacudida al costado
+    { t: 7.00, I: M.abajoI, D: M.pechoD, cX: 0.05 },
+    { t: 7.25, I: M.abajoI, D: M.sacudeD, hZ: 0.08 },
+    // 0:11.5 «¡ay qué locura!»: manos en garra arriba, ojos grandes y lengua afuera
+    { t: 7.50, I: M.garraI, D: M.garraD, hX: -0.1, ojos: 1.35, lengua: 1 },
+    { t: 7.75, I: M.garraAltaI, D: M.garraAltaD, hX: 0.05, ojos: 1.35, lengua: 1 },
+    // 0:12 puños al pecho
+    { t: 8.00, I: M.punosPechoI, D: M.punosPechoD, cX: 0.08 },
+    // 0:12.25 manos a la cabeza y la sacude
+    { t: 8.25, I: M.cabezaI, D: M.cabezaD, hZ: 0.15, ojos: 0.5 },
+    { t: 8.50, I: M.cabezaI, D: M.cabezaD, hZ: -0.15, ojos: 0.3 },
+    { t: 8.75, I: M.cabezaI, D: M.cabezaD, hZ: 0.12, hX: 0.1, ojos: 0.3 },
+    // 0:13 mano en el mentón (pensando) y en el pecho
+    { t: 9.00, I: M.abajoI, D: M.mentonD, hZ: 0.1, hX: 0.05, ojos: 0.9 },
+    { t: 9.50, I: M.abajoI, D: M.corazonD, cY: 0.15 },
+    // 0:14 se acerca señalando a la cámara y se ríe
+    { t: 10.00, I: M.apuntaI, D: M.abajoD, cX: 0.18, hX: 0.1 },
+    { t: 10.50, I: M.abajoI, D: M.risaD, cX: 0.15, hX: 0.2, ojos: 0.4 },
+    { t: 11.00, I: M.abajoI, D: M.abajoD, cX: 0.05 },
+  ];
+  const DURACION_BAILE = 11.25;          // al final vuelve a la pose del principio: loop sin cortes
+  const TIEMPO = 0.5;                    // un tiempo de la música (s)
+  const ESCALARES = ["cX", "cY", "cZ", "hX", "hY", "hZ", "ojos", "lengua"];
+  const VALOR_BASE = { ojos: 1 };
+
+  // Interpolación suave (Hermite) entre pasos, con tangentes de los vecinos.
+  // El baile da la vuelta: después del último paso viene el primero.
+  function vecino(i) {
+    const n = COREO.length;
+    const vueltas = Math.floor(i / n);
+    const k = COREO[((i % n) + n) % n];
+    return { k, t: k.t + vueltas * DURACION_BAILE };
+  }
+  function valor(k, clave, eje) {
+    if (eje !== undefined) return k[clave][eje];
+    return k[clave] !== undefined ? k[clave] : (VALOR_BASE[clave] || 0);
+  }
+  function hermite(t, i, clave, eje) {
+    const a = vecino(i - 1), b = vecino(i), c = vecino(i + 1), d = vecino(i + 2);
+    const h = c.t - b.t;
+    const u = (t - b.t) / h;
+    const p1 = valor(b.k, clave, eje), p2 = valor(c.k, clave, eje);
+    const m1 = ((p2 - valor(a.k, clave, eje)) / (c.t - a.t)) * h * 0.85;
+    const m2 = ((valor(d.k, clave, eje) - p1) / (d.t - b.t)) * h * 0.85;
+    const u2 = u * u, u3 = u2 * u;
+    return (2 * u3 - 3 * u2 + 1) * p1 + (u3 - 2 * u2 + u) * m1 + (-2 * u3 + 3 * u2) * p2 + (u3 - u2) * m2;
+  }
+
+  const manoBaileI = new THREE.Vector3();
+  const manoBaileD = new THREE.Vector3();
+  function baileLocura(u, p) {
+    // u: segundos desde que empezó el baile
+    const t = ((u % DURACION_BAILE) + DURACION_BAILE) % DURACION_BAILE;
+    let i = 0;
+    while (i < COREO.length - 1 && COREO[i + 1].t <= t) i++;
+    for (let e = 0; e < 3; e++) {
+      manoBaileI.setComponent(e, hermite(t, i, "I", e));
+      manoBaileD.setComponent(e, hermite(t, i, "D", e));
+    }
+    ESCALARES.forEach(clave => { p[clave] = hermite(t, i, clave); });
+
+    // Onda de fondo al ritmo: rebote en cada tiempo, cadera que va y viene,
+    // hombros que tiemblan y pasitos en el lugar.
+    const fase = (t / TIEMPO) * PI;
+    const rebote = Math.abs(Math.sin(fase));
+    p.cZ += Math.sin(fase) * 0.05;
+    p.cY += Math.sin(fase * 2) * 0.04;
+    p.hX += rebote * 0.05;
+    p.pIX = -Math.max(0, Math.sin(fase)) * 0.28;
+    p.pDX = -Math.max(0, -Math.sin(fase)) * 0.28;
+    return { y: rebote * 0.05, aplaste: (1 - rebote) * 0.035 };
+  }
+
+  // ---------- Brazos: de "dónde quiero la mano" a ángulos de hombro y codo ----------
+  const ABAJO = new THREE.Vector3(0, -1, 0);
+  const _dir = new THREE.Vector3(), _perp = new THREE.Vector3(), _codo = new THREE.Vector3();
+  const _sup = new THREE.Vector3(), _inf = new THREE.Vector3(), _q = new THREE.Quaternion();
+  function moverBrazo(b, mano, pista) {
+    // Cinemática inversa de dos huesos, en el espacio del torso
+    const S = b.hombro.position;
+    _dir.subVectors(mano, S);
+    const d = Math.min(Math.max(_dir.length(), 0.08), LARGO_BRAZO - 0.0005);
+    _dir.normalize();
+    const cosA = Math.min(1, Math.max(-1, (BRAZO_SUP * BRAZO_SUP + d * d - ANTEBRAZO * ANTEBRAZO) / (2 * BRAZO_SUP * d)));
+    const a = Math.acos(cosA);
+    _perp.copy(pista).addScaledVector(_dir, -pista.dot(_dir));
+    if (_perp.lengthSq() < 1e-6) _perp.set(0, 0, -1);
+    _perp.normalize();
+    _codo.copy(S).addScaledVector(_dir, BRAZO_SUP * Math.cos(a)).addScaledVector(_perp, BRAZO_SUP * Math.sin(a));
+    _sup.subVectors(_codo, S).normalize();
+    b.hombro.quaternion.setFromUnitVectors(ABAJO, _sup);
+    _inf.copy(S).addScaledVector(_dir, d).sub(_codo).normalize();
+    _q.copy(b.hombro.quaternion).invert();
+    _inf.applyQuaternion(_q);
+    b.codo.quaternion.setFromUnitVectors(ABAJO, _inf.normalize());
+  }
+
+  // Mano según los ángulos de las partes "de escena" (brazo estirado)
+  const _euler = new THREE.Euler();
+  function manoPorAngulos(b, ax, az, out) {
+    _euler.set(ax, 0, az);
+    return out.set(0, -LARGO_BRAZO, 0).applyEuler(_euler).add(b.hombro.position);
+  }
+
+  // Hacia dónde apunta el codo: afuera y atrás; si la mano está alta, afuera y abajo
+  function pistaCodo(b, mano, out) {
+    const k = clamp01((mano.y - 0.5) / 0.3);
+    return out.set(b.lado, -0.45 - 0.45 * k, -0.4 + 0.3 * k);
   }
 
   function escenaEn(c, alturaColgado) {
     // Devuelve la pose objetivo, la altura (y) y el aplastado para el momento c del ciclo
     const p = Object.assign({}, NEUTRO);
-    let y = 0, aplaste = 0, rapido = false;
+    let y = 0, aplaste = 0, rapido = false, baila = false;
 
     if (c < T.vuelta) {
       // Mira la tarjeta, respira y da saltitos de ganas
@@ -1305,14 +1499,21 @@ iniciar();
       aplaste = k > 0.9 ? 0.06 : 0;
       p.ojos = 1.1;
     } else {
-      // Baile final
-      y = baileFinal(c - T.baile, p);
+      // Baile «Ay qué locura»
+      const r = baileLocura(c - T.baile, p);
+      y = r.y;
+      aplaste = r.aplaste;
+      rapido = true;
+      baila = true;
     }
-    return { p, y, aplaste, rapido };
+    return { p, y, aplaste, rapido, baila };
   }
 
   // ---------- Animar ----------
   let cAnterior = 0;
+  let pesoBaile = 0;
+  const manoI = new THREE.Vector3(), manoD = new THREE.Vector3();
+  const pistaI = new THREE.Vector3(), pistaD = new THREE.Vector3();
   function animar(t, dt) {
     medir();
     const alturaColgado = bordeY - 0.03 - ALTURA_MANOS - pisoY;   // cuánto sube hasta agarrarse
@@ -1331,23 +1532,34 @@ iniciar();
     if (!enPiezas && estado !== "armado") terminarRearmado();
     cAnterior = c;
 
-    const { p: objetivo, y, aplaste, rapido } = escenaEn(c, alturaColgado);
+    const { p: objetivo, y, aplaste, rapido, baila } = escenaEn(c, alturaColgado);
 
     // Pasar suave a la pose (más rápido en los momentos bruscos)
     const k = dt === 0 ? 1 : 1 - Math.exp(-dt * (rapido ? 24 : 11));
     for (const clave in objetivo) actual[clave] += (objetivo[clave] - actual[clave]) * k;
     const p = actual;
+    // Entrada y salida suave del baile
+    pesoBaile += ((baila ? 1 : 0) - pesoBaile) * (dt === 0 ? 1 : 1 - Math.exp(-dt * 7));
 
     santa.position.set(0, pisoY + y, 0);
     santa.rotation.set(0, p.giro, p.tumbo);
     colgador.rotation.set(p.colgX, 0, p.colgZ);
     cuerpo.scale.set(1 + aplaste * 0.6, 1 - aplaste, 1 + aplaste * 0.6);
-    cadera.rotation.set(p.cX, 0, p.cZ);
+    cadera.rotation.set(p.cX, p.cY, p.cZ);
+    const l = Math.max(0.001, p.lengua);
+    lengua.scale.set(0.9 * l, 0.6 * l, 1.1 * l);
 
     if (estado === "armado") {
-      cabeza.rotation.set(p.hX, 0, p.hZ);
-      brazoIzq.rotation.set(p.aIX, 0, p.aIZ);
-      brazoDer.rotation.set(p.aDX, 0, p.aDZ);
+      cabeza.rotation.set(p.hX, p.hY, p.hZ);
+      // Brazos: mezcla entre la pose "de escena" y la del baile, y de ahí hombro + codo
+      manoPorAngulos(brazoIzq, p.aIX, p.aIZ, manoI);
+      manoPorAngulos(brazoDer, p.aDX, p.aDZ, manoD);
+      if (pesoBaile > 0.001) {
+        manoI.lerp(manoBaileI, pesoBaile);
+        manoD.lerp(manoBaileD, pesoBaile);
+      }
+      moverBrazo(brazoIzq, manoI, pistaCodo(brazoIzq, manoI, pistaI));
+      moverBrazo(brazoDer, manoD, pistaCodo(brazoDer, manoD, pistaD));
       piernaIzq.rotation.set(p.pIX, 0, p.pIZ);
       piernaDer.rotation.set(p.pDX, 0, p.pDZ);
       gorro.rotation.set(0, 0, -0.12);
