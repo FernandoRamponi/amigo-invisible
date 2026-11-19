@@ -388,8 +388,7 @@ async function iniciar() {
     if (!res.ok) throw new Error(res.error);
     participantes = res.participantes;
     if (previo && res.vigente === false && participantes.includes(previo.nombre)) {
-      borrarResultado();
-      mostrarMensaje(`El organizador reseteó el sorteo de ${previo.nombre}. Elegí tu nombre y sorteá 🎲`);
+      borrarResultado(); // en silencio: el participante no se entera de lo que hizo el admin
       previo = null;
     }
   } catch (err) {
