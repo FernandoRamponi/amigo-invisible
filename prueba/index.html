@@ -348,258 +348,617 @@ h1 {
 }
 
 /* ---------- Admin ---------- */
-/* Botón discreto abajo de todo */
-.btn-admin {
-  display: block;
-  margin: 4px auto 12px;
-  padding: 8px 16px;
-  font: inherit;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.6);
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
+:root {
+  --fuente-ui: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "SF Pro Display", Roboto, sans-serif;
 }
-.btn-admin:hover,
-.btn-admin:focus-visible { outline: none; color: #fff; border-color: var(--dorado); }
+
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* Íconos lineales */
+.ico {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* LED que recorre el borde de los botones al pasar el cursor (o al llegar con el teclado) */
+@property --giro {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.luz { position: relative; }
+.luz::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--giro),
+    transparent 0deg, transparent 190deg,
+    rgba(0, 170, 255, 0.85) 250deg, #ffffff 300deg, rgba(0, 170, 255, 0.85) 330deg,
+    transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+  animation: led-gira 1.8s linear infinite;
+}
+@keyframes led-gira { to { --giro: 360deg; } }
+.luz:focus-visible { outline: none; }
+.luz:focus-visible::after { opacity: 1; }
+.luz:focus-visible,
+.luz:active:not(:disabled) {
+  box-shadow: 0 0 0 1px rgba(160, 215, 255, 0.9), 0 0 18px 2px rgba(0, 150, 255, 0.55);
+}
+@media (hover: hover) {
+  .luz:hover:not(:disabled)::after { opacity: 1; }
+  .luz:hover:not(:disabled) {
+    box-shadow: 0 0 0 1px rgba(160, 215, 255, 0.9), 0 0 18px 2px rgba(0, 150, 255, 0.55),
+      0 0 40px rgba(0, 120, 255, 0.25);
+  }
+}
+
+/* Botón de admin: arriba a la derecha */
+.btn-admin {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px 0 12px;
+  font: 600 0.9rem/1 var(--fuente-ui);
+  letter-spacing: 0.03em;
+  color: #eef4ff;
+  background: rgba(6, 14, 30, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: box-shadow 0.25s, transform 0.2s, background 0.2s;
+}
+.btn-admin .ico { width: 18px; height: 18px; color: #7cc4ff; }
+@media (hover: hover) {
+  .btn-admin:hover { background: rgba(10, 24, 52, 0.8); transform: translateY(-1px); }
+}
+@media (max-width: 600px) {
+  .contenedor { padding-top: 64px; }
+}
+
+/* Ventana a pantalla completa, estilo consola */
+body:has(.admin[open]) { overflow: hidden; }
 
 .admin {
-  width: min(480px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
+  --a-texto: #f2f6ff;
+  --a-suave: rgba(222, 232, 255, 0.72);
+  --a-tenue: rgba(222, 232, 255, 0.48);
+  --a-vidrio: rgba(255, 255, 255, 0.055);
+  --a-vidrio-2: rgba(255, 255, 255, 0.09);
+  --a-borde: rgba(255, 255, 255, 0.12);
+  --a-azul: #2f7bff;
+  --a-celeste: #7cc4ff;
+  --a-verde: #43e396;
+  --a-rojo: #ff5c7a;
+  --a-ambar: #ffc857;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
   padding: 0;
-  color: var(--texto);
-  background: var(--crema);
-  border: 3px solid var(--dorado);
-  border-radius: 16px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  border: 0;
+  color: var(--a-texto);
+  background: #050a18;
+  font-family: var(--fuente-ui);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
-.admin::backdrop { background: rgba(4, 12, 8, 0.78); }
-.admin-interior { padding: 16px 18px 20px; }
+.admin[open] { animation: admin-abrir 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.admin::backdrop { background: rgba(3, 6, 14, 0.7); }
+@keyframes admin-abrir { from { opacity: 0; transform: scale(1.03); } }
+.admin [hidden] { display: none !important; }
 
-.admin-cabecera {
+.admin-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(1000px 600px at 85% -10%, rgba(47, 123, 255, 0.38), transparent 60%),
+    radial-gradient(800px 520px at -10% 110%, rgba(110, 70, 255, 0.3), transparent 60%),
+    linear-gradient(165deg, #071029 0%, #0a1838 45%, #040814 100%);
+}
+/* Ondas de luz que se mueven despacio */
+.admin-fondo::before,
+.admin-fondo::after {
+  content: "";
+  position: absolute;
+  left: -30vmax;
+  width: 160vmax;
+  height: 34vmax;
+  border-radius: 50%;
+  border-top: 2px solid rgba(140, 200, 255, 0.22);
+  background: radial-gradient(closest-side, rgba(90, 160, 255, 0.16), transparent);
+  filter: blur(2px);
+  animation: ola 16s ease-in-out infinite alternate;
+}
+.admin-fondo::before { top: 34%; }
+.admin-fondo::after {
+  top: 52%;
+  border-top-color: rgba(180, 150, 255, 0.18);
+  background: radial-gradient(closest-side, rgba(140, 100, 255, 0.13), transparent);
+  animation-duration: 22s;
+  animation-direction: alternate-reverse;
+}
+@keyframes ola {
+  from { transform: translateX(-5vmax) rotate(-7deg); }
+  to { transform: translateX(5vmax) rotate(-2deg); }
+}
+
+.admin-interior {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 18px 16px 40px;
+}
+
+/* Barra de arriba */
+.admin-barra {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 22px;
 }
-.admin-cabecera h2 { margin: 0; font-size: 1.3rem; color: var(--verde); }
-.admin-cerrar {
+.admin-marca { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.admin-marca-ico {
   flex: none;
-  width: 40px;
-  height: 40px;
-  font-size: 1.1rem;
-  color: var(--texto);
-  background: rgba(0, 0, 0, 0.07);
-  border: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2f7bff, #7b5cff);
+  box-shadow: 0 8px 24px rgba(47, 123, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.admin-marca-ico .ico { width: 23px; height: 23px; color: #fff; }
+.admin-sobre {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--a-tenue);
+}
+.admin h2 {
+  margin: 2px 0 0;
+  font-size: 1.45rem;
+  font-weight: 300;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+
+.admin-icono-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--a-texto);
+  background: var(--a-vidrio-2);
+  border: 1px solid var(--a-borde);
   border-radius: 50%;
   cursor: pointer;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.25s;
 }
-.admin-cerrar:hover,
-.admin-cerrar:focus-visible { outline: none; background: rgba(0, 0, 0, 0.14); }
+.admin-icono-grande { width: 54px; height: 54px; }
+@media (hover: hover) {
+  .admin-icono-btn:hover { background: rgba(255, 255, 255, 0.15); transform: translateY(-1px); }
+}
 
-.admin-ayuda {
-  margin: 0 0 14px;
-  padding: 10px 12px;
-  font-size: 0.9rem;
-  background: #fff3c4;
-  border-radius: 10px;
+/* Tarjetas de vidrio */
+.admin-tarjeta {
+  padding: 28px 22px 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.035));
+  border: 1px solid var(--a-borde);
+  border-radius: 24px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
-.admin-ayuda[hidden], .admin-form[hidden], .admin-panel[hidden] { display: none; }
+.admin-vista { animation: vista-entrar 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes vista-entrar { from { opacity: 0; transform: translateY(12px); } }
 
-.admin-form label {
-  display: block;
-  margin: 0 0 6px;
-  font-weight: 700;
-  color: var(--verde);
-}
-.admin-form input {
-  display: block;
-  width: 100%;
-  margin: 0 0 14px;
+.admin-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
   padding: 12px 14px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #ffe7a8;
+  background: rgba(255, 200, 87, 0.08);
+  border: 1px solid rgba(255, 200, 87, 0.25);
+  border-radius: 14px;
+}
+.admin-aviso .ico { width: 18px; height: 18px; margin-top: 1px; }
+
+.admin-avatar {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, #5aa8ff, #2f5bff 55%, #5a3dff);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08), 0 14px 40px rgba(61, 139, 255, 0.45);
+}
+.admin-avatar .ico { width: 38px; height: 38px; color: #fff; stroke-width: 1.6; }
+.admin-bajada {
+  margin: 0 0 22px;
+  text-align: center;
+  line-height: 1.5;
+  color: var(--a-suave);
+}
+
+/* Campos */
+.admin-campo { display: block; margin-bottom: 16px; }
+.admin-etiqueta {
+  display: block;
+  margin: 0 0 8px 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--a-tenue);
+}
+.admin-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 54px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  transition: border-color 0.2s, box-shadow 0.25s, background 0.2s;
+}
+.admin-input .ico { color: var(--a-tenue); transition: color 0.2s; }
+.admin-input:focus-within {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--a-celeste);
+  box-shadow: 0 0 0 3px rgba(47, 123, 255, 0.28), 0 0 26px rgba(47, 123, 255, 0.35);
+}
+.admin-input:focus-within .ico { color: var(--a-celeste); }
+.admin-input input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
   font: inherit;
   font-size: 1.05rem;
-  color: var(--texto);
-  background: #fff;
-  border: 2px solid #ddcfb8;
-  border-radius: 12px;
-}
-.admin-form input:focus {
-  outline: none;
-  border-color: var(--verde);
-  box-shadow: 0 0 0 3px rgba(30, 122, 70, 0.2);
-}
-.admin-codigo-input {
-  font-size: 1.6rem !important;
-  font-weight: 800;
-  letter-spacing: 0.35em;
-  text-align: center;
-}
-.admin-texto { margin: 0 0 14px; line-height: 1.4; }
-.admin-cuenta {
-  margin: 0 0 14px;
-  padding: 10px 12px;
-  font-weight: 700;
-  text-align: center;
-  color: var(--verde);
-  background: rgba(30, 122, 70, 0.1);
-  border-radius: 10px;
-}
-.admin-cuenta.vencido { color: var(--rojo); background: rgba(200, 16, 46, 0.1); }
-
-.btn-verde {
-  display: block;
-  width: 100%;
-  padding: 14px;
-  font-size: 1.15rem;
   color: #fff;
-  background: var(--verde);
-  box-shadow: 0 4px 0 #10502b;
+  background: transparent;
+  border: 0;
+  outline: none;
 }
-.btn-verde:hover:not(:disabled) { filter: brightness(1.1); }
-.btn-verde:active:not(:disabled) { box-shadow: 0 1px 0 #10502b; transform: translateY(3px); }
+.admin-input input::placeholder { color: rgba(222, 232, 255, 0.35); }
+.admin-input input:-webkit-autofill {
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+  transition: background-color 9999s;
+}
+.admin-input-codigo { height: 68px; }
+.admin-input-codigo input {
+  padding-left: 0.5em;
+  font-size: 1.9rem;
+  font-weight: 600;
+  letter-spacing: 0.5em;
+  text-align: center;
+}
 
-.btn-claro {
-  display: block;
+/* Botones */
+.admin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   width: 100%;
-  padding: 12px;
-  font-size: 1rem;
-  color: var(--texto);
-  background: #fff;
-  border: 2px solid var(--dorado);
-}
-.btn-claro[aria-pressed="true"] { background: #fff3c4; }
-
-.admin-link {
-  display: block;
-  margin: 10px auto 0;
-  padding: 8px;
-  font: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--verde);
-  background: none;
-  border: none;
-  text-decoration: underline;
+  min-height: 54px;
+  padding: 0 22px;
+  font: 600 1.05rem/1.2 var(--fuente-ui);
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  border-radius: 999px;
   cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.25s, background 0.2s, color 0.2s;
 }
-.admin-link:disabled { opacity: 0.5; cursor: wait; }
+.admin-btn:disabled { opacity: 0.55; cursor: progress; }
+.admin-btn-primario {
+  color: #fff;
+  background: linear-gradient(135deg, #2f7bff, #4fa2ff);
+  box-shadow: 0 10px 28px rgba(47, 123, 255, 0.4);
+}
+.admin-btn-secundario {
+  color: var(--a-texto);
+  background: var(--a-vidrio-2);
+  border-color: var(--a-borde);
+}
+.admin-btn-secundario[aria-pressed="true"] { background: rgba(47, 123, 255, 0.2); border-color: rgba(124, 196, 255, 0.4); }
+.admin-btn-texto {
+  width: auto;
+  min-height: 44px;
+  margin: 14px auto 0;
+  padding: 0 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--a-suave);
+  background: transparent;
+}
+.admin-btn-peligro {
+  color: #fff;
+  background: linear-gradient(135deg, #ff4d6d, #ff7a59);
+  box-shadow: 0 8px 22px rgba(255, 77, 109, 0.35);
+}
+@media (hover: hover) {
+  .admin-btn:hover:not(:disabled) { transform: translateY(-1px); }
+  .admin-btn-texto:hover:not(:disabled) { color: #fff; }
+  .admin-btn-secundario:hover:not(:disabled) { background: rgba(255, 255, 255, 0.14); }
+}
+.admin-fila-botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px;
+  margin-top: 10px;
+}
+.admin-fila-botones .admin-btn-texto { margin: 0; }
 
+/* Mensajes */
 .admin-msj {
-  min-height: 1.3em;
-  margin: 12px 0 0;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--verde);
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--a-verde);
 }
-.admin-msj:empty { min-height: 0; margin: 0; }
-.admin-msj.error { color: var(--rojo); }
+.admin-msj:empty { display: none; }
+.admin-msj.error { color: var(--a-rojo); }
+.admin-toast {
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  text-align: left;
+  background: rgba(67, 227, 150, 0.1);
+  border: 1px solid rgba(67, 227, 150, 0.3);
+  border-radius: 16px;
+  animation: vista-entrar 0.3s;
+}
+.admin-toast.error { background: rgba(255, 92, 122, 0.1); border-color: rgba(255, 92, 122, 0.35); }
+
+/* Anillos (cuenta regresiva del código y progreso del sorteo) */
+.admin-reloj,
+.admin-anillo { position: relative; flex: none; }
+.admin-reloj { width: 128px; height: 128px; margin: 0 auto 12px; }
+.admin-anillo { width: 104px; height: 104px; }
+.admin-reloj svg,
+.admin-anillo svg { display: block; width: 100%; height: 100%; transform: rotate(-90deg); }
+.anillo-fondo { fill: none; stroke: rgba(255, 255, 255, 0.1); stroke-width: 8; }
+.anillo-arco {
+  fill: none;
+  stroke: var(--a-celeste);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 326.73;
+  stroke-dashoffset: 326.73;
+  filter: drop-shadow(0 0 6px rgba(124, 196, 255, 0.8));
+  transition: stroke-dashoffset 0.6s ease, stroke 0.3s;
+}
+.admin-reloj .anillo-arco { transition: stroke-dashoffset 0.5s linear, stroke 0.3s; }
+.admin-reloj.urgente .anillo-arco { stroke: var(--a-ambar); filter: drop-shadow(0 0 6px rgba(255, 200, 87, 0.8)); }
+.admin-reloj.vencido .anillo-arco { stroke: var(--a-rojo); }
+.admin-anillo .anillo-arco { stroke: var(--a-verde); filter: drop-shadow(0 0 6px rgba(67, 227, 150, 0.7)); }
+.admin-reloj-centro {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+.admin-reloj-centro strong {
+  font-size: 1.9rem;
+  font-weight: 300;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.admin-reloj-centro span {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--a-tenue);
+}
+.admin-reloj.vencido .admin-reloj-centro strong { color: var(--a-rojo); }
 
 /* Panel */
-.admin-panel > .admin-msj:not(:empty) {
-  margin: 12px 0 0;
-  padding: 10px 12px;
-  background: rgba(30, 122, 70, 0.1);
-  border-radius: 10px;
-}
-.admin-panel > .admin-msj.error:not(:empty) { background: rgba(200, 16, 46, 0.1); }
-.admin-resumen { margin: 0 0 8px; font-size: 1.05rem; font-weight: 700; }
-.admin-progreso {
-  height: 10px;
+.admin-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
   margin-bottom: 14px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.08);
-  border-radius: 999px;
+  padding: 20px;
 }
-.admin-progreso span {
-  display: block;
-  height: 100%;
-  width: 0;
-  background: linear-gradient(90deg, var(--verde), #3ddc84);
-  border-radius: inherit;
-  transition: width 0.4s;
-}
+.admin-stats-texto { min-width: 0; }
+.admin-resumen { margin: 4px 0 2px; font-size: 1.2rem; font-weight: 600; color: #fff; }
+.admin-faltan { margin: 0; color: var(--a-suave); }
+
+.admin-acciones { display: flex; gap: 10px; margin-bottom: 14px; }
+.admin-acciones .admin-btn { flex: 1; }
 
 .admin-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 14px 0 0;
+  display: grid;
+  gap: 10px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 .admin-fila {
-  --c: var(--verde);
+  --c: var(--a-celeste);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 12px;
-  padding: 10px 12px;
-  background: #fff;
-  border: 1.5px solid #eadfcd;
-  border-left: 5px solid var(--c);
-  border-radius: 12px;
+  gap: 12px 14px;
+  padding: 14px;
+  background: var(--a-vidrio);
+  border: 1px solid var(--a-borde);
+  border-radius: 18px;
+  transition: background 0.2s, border-color 0.2s;
 }
-.admin-fila .avatar { width: 40px; height: 40px; }
+.admin-lista.animar .admin-fila { animation: vista-entrar 0.4s both; animation-delay: calc(var(--i) * 45ms); }
+@media (hover: hover) {
+  .admin-fila:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
+}
+.admin-foto {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #0a1430;
+  border: 2px solid var(--c);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.3), 0 0 16px color-mix(in srgb, var(--c) 60%, transparent);
+}
 .admin-info {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: flex-start;
+  gap: 6px;
 }
-.admin-info strong { font-size: 1.05rem; overflow-wrap: anywhere; }
-.admin-estado { font-size: 0.88rem; color: var(--gris); }
-.admin-fila.sorteo .admin-estado { color: var(--verde); font-weight: 600; }
-.admin-toca { font-size: 0.95rem; }
-.admin-toca b { color: var(--rojo); }
+.admin-info strong { font-size: 1.08rem; font-weight: 600; color: #fff; overflow-wrap: anywhere; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 999px;
+}
+.chip .ico { width: 14px; height: 14px; stroke-width: 2.2; }
+.chip-ok { color: var(--a-verde); background: rgba(67, 227, 150, 0.12); border: 1px solid rgba(67, 227, 150, 0.3); }
+.chip-pend { color: var(--a-ambar); background: rgba(255, 200, 87, 0.1); border: 1px solid rgba(255, 200, 87, 0.28); }
+.admin-toca { display: inline-flex; align-items: center; gap: 6px; font-size: 0.92rem; color: var(--a-suave); }
+.admin-toca .ico { width: 16px; height: 16px; color: #ff9ab0; }
+.admin-toca b { font-weight: 600; color: #fff; }
 
 .admin-resetear {
   flex: none;
-  padding: 8px 12px;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--rojo);
-  background: #fff;
-  border: 2px solid var(--rojo);
-  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  font: 600 0.88rem/1 var(--fuente-ui);
+  color: #ffd0da;
+  background: rgba(255, 92, 122, 0.1);
+  border: 1px solid rgba(255, 92, 122, 0.35);
+  border-radius: 999px;
   cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.25s;
 }
-.admin-resetear:hover:not(:disabled),
-.admin-resetear:focus-visible:not(:disabled) { outline: none; color: #fff; background: var(--rojo); }
-.admin-resetear:disabled { opacity: 0.5; cursor: wait; }
+.admin-resetear .ico { width: 16px; height: 16px; }
+.admin-resetear:disabled { opacity: 0.5; cursor: progress; }
+@media (hover: hover) {
+  .admin-resetear:hover:not(:disabled) { color: #fff; background: rgba(255, 92, 122, 0.24); }
+}
 
 .admin-confirmar {
   flex-basis: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 12px;
-  background: #fff1f1;
-  border-radius: 10px;
+  padding: 14px;
+  background: rgba(255, 92, 122, 0.08);
+  border: 1px solid rgba(255, 92, 122, 0.3);
+  border-radius: 14px;
+  animation: vista-entrar 0.3s;
 }
-.admin-confirmar p { flex-basis: 100%; margin: 0 0 4px; font-size: 0.92rem; line-height: 1.4; }
-.admin-si,
-.admin-no { flex: 1; padding: 10px; font-size: 1rem; }
-.admin-si { color: #fff; background: var(--rojo); box-shadow: 0 3px 0 var(--rojo-oscuro); }
-.admin-no { color: var(--texto); background: #fff; border: 2px solid #ddcfb8; }
+.admin-confirmar-texto {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--a-suave);
+}
+.admin-confirmar-texto .ico { width: 18px; height: 18px; margin-top: 1px; color: var(--a-rojo); }
+.admin-confirmar-botones { display: flex; gap: 8px; }
+.admin-confirmar-botones .admin-btn { flex: 1; min-height: 46px; padding: 0 12px; font-size: 0.95rem; }
 
-.admin-pie {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
+#admin-salir { margin-top: 22px; }
+
+@media (max-width: 420px) {
+  .admin-tarjeta { padding: 24px 16px 18px; }
+  .admin-stats { gap: 14px; padding: 16px; }
+  .admin h2 { font-size: 1.3rem; }
 }
-.admin-pie .admin-link { margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin[open], .admin-vista, .admin-toast, .admin-confirmar, .admin-lista.animar .admin-fila,
+  .admin-fondo::before, .admin-fondo::after { animation: none; }
+  .luz::after { animation: none; }
+}
 </style>
 </head>
 <body>
   <!-- Fondo: copos de nieve -->
   <div id="fondo" aria-hidden="true"></div>
+
+  <!-- Íconos (estilo lineal) que usa la parte de admin -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-3.6 8-10V5.2L12 2 4 5.2V12c0 6.4 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="11" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="5"/><path d="m11.6 11.4 9.4-9.4"/><path d="m16.5 6.5 3 3"/><path d="m14 9 2 2"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="m3 7 9 6 9-6"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M21.5 2.5 10.5 13.5"/><path d="m21.5 2.5-7 19-4-8-8-4Z"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.7 5.1A9.6 9.6 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-2.2 3.1"/><path d="M6.6 6.6C4 8.3 2.5 12 2.5 12S6 19 12 19a9 9 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9L3.5 15.5"/><path d="M3.5 20v-4.5H8"/><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9l2.4 2.4"/><path d="M20.5 4v4.5H16"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6L3.5 8.5"/><path d="M3.5 3.5v5h5"/></symbol>
+    <symbol id="i-log-out" viewBox="0 0 24 24"><path d="M9 21H5.5A2.5 2.5 0 0 1 3 18.5v-13A2.5 2.5 0 0 1 5.5 3H9"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4.5" rx="1.2"/><path d="M12 8v13"/><path d="M19.5 12.5V19a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-6.5"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10.5 3 12 8 12 8s1.5-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4 2.4 17.5a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></symbol>
+  </svg>
+
+  <!-- Botón para entrar como admin (arriba a la derecha) -->
+  <button type="button" id="btn-admin" class="btn-admin luz" aria-label="Entrar como admin">
+    <svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>
+    <span>Admin</span>
+  </button>
 
   <main class="contenedor">
     <h1>🎁 Amigo Invisible 🎁</h1>
@@ -677,8 +1036,6 @@ h1 {
       </svg>
     </div>
 
-    <button type="button" id="btn-admin" class="btn-admin">🔒 Admin</button>
-
     <p id="aviso-demo" class="aviso-demo oculto">
       Modo prueba: nombres de ejemplo, no se manda ningún mail y nada de esto toca el sorteo real.
     </p>
@@ -686,70 +1043,157 @@ h1 {
 
   <!-- Ventana de admin: entrar, crear/cambiar contraseña con código por mail, y panel -->
   <dialog id="admin" class="admin" aria-labelledby="admin-titulo">
+    <div class="admin-fondo" aria-hidden="true"></div>
     <div class="admin-interior">
-      <div class="admin-cabecera">
-        <h2 id="admin-titulo">🔒 Entrar como admin</h2>
-        <button type="button" id="admin-cerrar" class="admin-cerrar" aria-label="Cerrar">✕</button>
-      </div>
+      <header class="admin-barra">
+        <div class="admin-marca">
+          <span class="admin-marca-ico"><svg class="ico" aria-hidden="true"><use id="admin-marca-uso" href="#i-shield"/></svg></span>
+          <div>
+            <p class="admin-sobre">Amigo Invisible</p>
+            <h2 id="admin-titulo">Entrar como admin</h2>
+          </div>
+        </div>
+        <button type="button" id="admin-cerrar" class="admin-icono-btn luz" aria-label="Cerrar">
+          <svg class="ico" aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+      </header>
 
-      <p id="admin-ayuda-demo" class="admin-ayuda" hidden>
-        Modo prueba: sirve cualquier usuario y contraseña, y el código te lo muestro acá en vez de mandarlo por mail.
+      <p id="admin-ayuda-demo" class="admin-aviso" hidden>
+        <svg class="ico" aria-hidden="true"><use href="#i-info"/></svg>
+        <span>Modo prueba: sirve cualquier usuario y contraseña, y el código te lo muestro acá en vez de mandarlo por mail.</span>
       </p>
 
       <!-- 1. Entrar -->
-      <form id="admin-login" class="admin-form" novalidate>
-        <label for="admin-usuario">Usuario</label>
-        <input id="admin-usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
-        <label for="admin-clave">Contraseña</label>
-        <input id="admin-clave" type="password" autocomplete="current-password">
-        <button id="admin-entrar" class="btn btn-verde" type="submit">Entrar</button>
+      <form id="admin-login" class="admin-vista admin-tarjeta" novalidate>
+        <div class="admin-avatar"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg></div>
+        <p class="admin-bajada">Solo el organizador puede entrar acá.</p>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Usuario</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-user"/></svg>
+            <input id="admin-usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Contraseña</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
+            <input id="admin-clave" type="password" autocomplete="current-password">
+          </span>
+        </label>
+        <button id="admin-entrar" class="admin-btn admin-btn-primario luz" type="submit">
+          <span>Entrar</span>
+          <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+        </button>
         <p id="admin-login-msj" class="admin-msj" role="status"></p>
-        <button type="button" id="admin-ir-recuperar" class="admin-link">🔑 ¿Primera vez o te olvidaste la contraseña?</button>
+        <button type="button" id="admin-ir-recuperar" class="admin-btn admin-btn-texto luz">
+          <svg class="ico" aria-hidden="true"><use href="#i-key"/></svg>
+          <span>¿Primera vez o te olvidaste la contraseña?</span>
+        </button>
       </form>
 
       <!-- 2. Pedir el código al Gmail -->
-      <form id="admin-mail" class="admin-form" novalidate hidden>
-        <p class="admin-texto">
+      <form id="admin-mail" class="admin-vista admin-tarjeta" novalidate hidden>
+        <div class="admin-avatar"><svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg></div>
+        <p class="admin-bajada">
           Escribí tu Gmail y te mando un código para crear o cambiar tu usuario y contraseña.
           El código vence en 2 minutos.
         </p>
-        <label for="admin-mail-input">Tu Gmail</label>
-        <input id="admin-mail-input" type="email" autocomplete="email" autocapitalize="none" spellcheck="false">
-        <button id="admin-mail-enviar" class="btn btn-verde" type="submit">📧 Mandarme el código</button>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Tu Gmail</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg>
+            <input id="admin-mail-input" type="email" autocomplete="email" autocapitalize="none" spellcheck="false">
+          </span>
+        </label>
+        <button id="admin-mail-enviar" class="admin-btn admin-btn-primario luz" type="submit">
+          <svg class="ico" aria-hidden="true"><use href="#i-send"/></svg>
+          <span>Mandarme el código</span>
+        </button>
         <p id="admin-mail-msj" class="admin-msj" role="status"></p>
-        <button type="button" class="admin-link admin-volver">← Volver</button>
+        <button type="button" class="admin-btn admin-btn-texto luz admin-volver">
+          <svg class="ico" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+          <span>Volver</span>
+        </button>
       </form>
 
       <!-- 3. Código + usuario y contraseña nuevos -->
-      <form id="admin-codigo" class="admin-form" novalidate hidden>
-        <p id="admin-enviado" class="admin-texto"></p>
-        <p id="admin-cuenta" class="admin-cuenta" aria-live="polite"></p>
-        <label for="admin-codigo-input">Código del mail</label>
-        <input id="admin-codigo-input" class="admin-codigo-input" type="text" inputmode="numeric"
-               autocomplete="one-time-code" maxlength="6" placeholder="••••••">
-        <label for="admin-nuevo-usuario">Usuario</label>
-        <input id="admin-nuevo-usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
-        <label for="admin-nueva-clave">Contraseña nueva</label>
-        <input id="admin-nueva-clave" type="password" autocomplete="new-password" placeholder="Al menos 6 caracteres">
-        <label for="admin-nueva-clave2">Repetí la contraseña</label>
-        <input id="admin-nueva-clave2" type="password" autocomplete="new-password">
-        <button id="admin-guardar" class="btn btn-verde" type="submit">Guardar y entrar</button>
+      <form id="admin-codigo" class="admin-vista admin-tarjeta" novalidate hidden>
+        <div id="admin-reloj" class="admin-reloj" aria-hidden="true">
+          <svg viewBox="0 0 120 120"><circle class="anillo-fondo" cx="60" cy="60" r="52"/><circle id="admin-reloj-arco" class="anillo-arco" cx="60" cy="60" r="52"/></svg>
+          <div class="admin-reloj-centro"><strong id="admin-reloj-texto">2:00</strong><span>vence en</span></div>
+        </div>
+        <p id="admin-enviado" class="admin-bajada"></p>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Código del mail</span>
+          <span class="admin-input admin-input-codigo">
+            <input id="admin-codigo-input" type="text" inputmode="numeric" autocomplete="one-time-code"
+                   maxlength="6" placeholder="······">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Usuario</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-user"/></svg>
+            <input id="admin-nuevo-usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Contraseña nueva</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
+            <input id="admin-nueva-clave" type="password" autocomplete="new-password" placeholder="Al menos 6 caracteres">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Repetí la contraseña</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
+            <input id="admin-nueva-clave2" type="password" autocomplete="new-password">
+          </span>
+        </label>
+        <button id="admin-guardar" class="admin-btn admin-btn-primario luz" type="submit">
+          <svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg>
+          <span>Guardar y entrar</span>
+        </button>
         <p id="admin-codigo-msj" class="admin-msj" role="status"></p>
-        <button type="button" id="admin-reenviar" class="admin-link">📧 Mandarme otro código</button>
-        <button type="button" class="admin-link admin-volver">← Volver</button>
+        <div class="admin-fila-botones">
+          <button type="button" id="admin-reenviar" class="admin-btn admin-btn-texto luz">
+            <svg class="ico" aria-hidden="true"><use href="#i-send"/></svg>
+            <span>Mandarme otro código</span>
+          </button>
+          <button type="button" class="admin-btn admin-btn-texto luz admin-volver">
+            <svg class="ico" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+            <span>Volver</span>
+          </button>
+        </div>
       </form>
 
       <!-- 4. Panel -->
-      <div id="admin-panel" class="admin-panel" hidden>
-        <p id="admin-resumen" class="admin-resumen"></p>
-        <div class="admin-progreso" aria-hidden="true"><span id="admin-barra"></span></div>
-        <button type="button" id="admin-ver" class="btn btn-claro" aria-pressed="false"></button>
-        <p id="admin-msj" class="admin-msj" role="status"></p>
-        <ul id="admin-lista" class="admin-lista"></ul>
-        <div class="admin-pie">
-          <button type="button" id="admin-actualizar" class="admin-link">↻ Actualizar</button>
-          <button type="button" id="admin-salir" class="admin-link">Salir del admin</button>
+      <div id="admin-panel" class="admin-vista" hidden>
+        <section class="admin-tarjeta admin-stats">
+          <div class="admin-anillo" aria-hidden="true">
+            <svg viewBox="0 0 120 120"><circle class="anillo-fondo" cx="60" cy="60" r="52"/><circle id="admin-anillo-arco" class="anillo-arco" cx="60" cy="60" r="52"/></svg>
+            <div class="admin-reloj-centro"><strong id="admin-cuantos">0</strong><span id="admin-total">de 0</span></div>
+          </div>
+          <div class="admin-stats-texto">
+            <p class="admin-sobre">Progreso del sorteo</p>
+            <p id="admin-resumen" class="admin-resumen">Cargando...</p>
+            <p id="admin-faltan" class="admin-faltan"></p>
+          </div>
+        </section>
+        <div class="admin-acciones">
+          <button type="button" id="admin-ver" class="admin-btn admin-btn-secundario luz" aria-pressed="false"></button>
+          <button type="button" id="admin-actualizar" class="admin-icono-btn admin-icono-grande luz" aria-label="Actualizar">
+            <svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg>
+          </button>
         </div>
+        <p id="admin-msj" class="admin-msj admin-toast" role="status"></p>
+        <ul id="admin-lista" class="admin-lista"></ul>
+        <button type="button" id="admin-salir" class="admin-btn admin-btn-texto luz">
+          <svg class="ico" aria-hidden="true"><use href="#i-log-out"/></svg>
+          <span>Cerrar sesión de admin</span>
+        </button>
       </div>
     </div>
   </dialog>
@@ -1132,16 +1576,17 @@ iniciar();
 </script>
   <script>// =====================================================
 // ADMIN
-// Botón discreto abajo de todo. Sirve para:
+// Botón arriba a la derecha. Abre una ventana a pantalla completa (estilo consola) para:
 //   - ver quién sorteó y a quién le regala cada uno,
 //   - resetear a alguien para que vuelva a sortear (si otro tocó su nombre sin querer),
 //   - crear o cambiar el usuario y la contraseña con un código que llega al Gmail
 //     del organizador y vence en 2 minutos.
 // Todo lo controla el Apps Script: acá no hay ninguna contraseña guardada.
-// Usa api(), colorDe(), fotoDe(), aleatorio() y demo de script.js.
+// Usa api(), colorDe(), fotoDe(), aleatorio(), demo, demoAsignaciones() y guardarDemo() de script.js.
 // =====================================================
 (function () {
   const CLAVE_SESION = MODO_DEMO ? "amigo-invisible-demo-admin" : "amigo-invisible-admin";
+  const VUELTA = 2 * Math.PI * 52; // largo del círculo de los anillos (r = 52)
 
   const $ = id => document.getElementById(id);
   const btnAdmin = $("btn-admin");
@@ -1153,6 +1598,7 @@ iniciar();
     panel: $("admin-panel"),
   };
   const titulo = $("admin-titulo");
+  const marcaUso = $("admin-marca-uso");
 
   // Entrar
   const usuario = $("admin-usuario");
@@ -1164,8 +1610,10 @@ iniciar();
   const btnMandar = $("admin-mail-enviar");
   const msjMail = $("admin-mail-msj");
   // Código + contraseña nueva
+  const reloj = $("admin-reloj");
+  const relojArco = $("admin-reloj-arco");
+  const relojTexto = $("admin-reloj-texto");
   const enviado = $("admin-enviado");
-  const cuenta = $("admin-cuenta");
   const codigo = $("admin-codigo-input");
   const nuevoUsuario = $("admin-nuevo-usuario");
   const nuevaClave = $("admin-nueva-clave");
@@ -1174,8 +1622,11 @@ iniciar();
   const btnReenviar = $("admin-reenviar");
   const msjCodigo = $("admin-codigo-msj");
   // Panel
+  const anilloArco = $("admin-anillo-arco");
+  const txtCuantos = $("admin-cuantos");
+  const txtTotal = $("admin-total");
   const resumen = $("admin-resumen");
-  const barra = $("admin-barra");
+  const faltan = $("admin-faltan");
   const btnVer = $("admin-ver");
   const lista = $("admin-lista");
   const msjPanel = $("admin-msj");
@@ -1186,7 +1637,8 @@ iniciar();
   let confirmando = "";
   let trabajando = false;
   let venceCodigo = 0;
-  let reloj = null;
+  let duracionCodigo = 120000;
+  let intervalo = null;
 
   if (MODO_DEMO) $("admin-ayuda-demo").hidden = false;
 
@@ -1203,16 +1655,50 @@ iniciar();
   }
 
   // ---------- Utilidades ----------
+  function icono(nombre) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("class", "ico");
+    svg.setAttribute("aria-hidden", "true");
+    const uso = document.createElementNS(ns, "use");
+    uso.setAttribute("href", "#i-" + nombre);
+    svg.append(uso);
+    return svg;
+  }
+
+  function boton(nombreIcono, texto, clase, alTocar) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = clase + " luz";
+    const t = document.createElement("span");
+    t.textContent = texto;
+    b.append(icono(nombreIcono), t);
+    b.disabled = trabajando;
+    b.addEventListener("click", alTocar);
+    return b;
+  }
+
   function escribir(el, texto, esError = false) {
     el.textContent = texto;
     el.classList.toggle("error", esError);
+    if (el === msjPanel && texto) {
+      el.style.animation = "none";
+      void el.offsetWidth;
+      el.style.animation = "";
+    }
   }
+
+  const TITULOS = {
+    login: ["Entrar como admin", "shield"],
+    mail: ["Crear o cambiar contraseña", "key"],
+    codigo: ["Crear o cambiar contraseña", "key"],
+    panel: ["Panel de admin", "grid"],
+  };
 
   function mostrar(vista, foco) {
     Object.entries(vistas).forEach(([nombre, el]) => { el.hidden = nombre !== vista; });
-    titulo.textContent = vista === "panel" ? "🎅 Panel de admin"
-      : vista === "login" ? "🔒 Entrar como admin"
-      : "🔑 Crear o cambiar contraseña";
+    titulo.textContent = TITULOS[vista][0];
+    marcaUso.setAttribute("href", "#i-" + TITULOS[vista][1]);
     if (vista !== "codigo") pararReloj();
     if (foco) foco.focus();
   }
@@ -1245,7 +1731,6 @@ iniciar();
   }
   btnAdmin.addEventListener("click", abrir);
   $("admin-cerrar").addEventListener("click", cerrar);
-  admin.addEventListener("click", e => { if (e.target === admin) cerrar(); });
   admin.addEventListener("close", pararReloj);
 
   // ---------- Entrar ----------
@@ -1282,24 +1767,25 @@ iniciar();
   }));
 
   // ---------- Código por mail ----------
-  async function mandarCodigo(msj, boton) {
+  async function mandarCodigo(msj, btn) {
     if (!mail.value.includes("@")) {
       mostrar("mail", mail);
       escribir(msjMail, "Escribí tu Gmail completo (con @gmail.com).", true);
       return false;
     }
-    boton.disabled = true;
+    btn.disabled = true;
     escribir(msj, "Mandando el código...");
     try {
       const res = await api({ accion: "adminPedirCodigo", mail: mail.value }, true);
       if (!res.ok) throw new Error(res.error || "No se pudo mandar el código");
-      venceCodigo = Date.now() + res.vence * 1000;
+      duracionCodigo = res.vence * 1000;
+      venceCodigo = Date.now() + duracionCodigo;
       return res;
     } catch (err) {
       escribir(msj, err.message, true);
       return false;
     } finally {
-      boton.disabled = false;
+      btn.disabled = false;
     }
   }
 
@@ -1311,7 +1797,7 @@ iniciar();
     mostrar("codigo", codigo);
     enviado.textContent = res.codigoDemo
       ? `Modo prueba: no se manda mail, el código es ${res.codigoDemo}`
-      : "📧 Te mandé un código de 6 números a tu Gmail. Si no lo ves, fijate en Spam.";
+      : "Te mandé un código de 6 números a tu Gmail. Si no lo ves, fijate en Spam.";
     escribir(msjCodigo, "");
     arrancarReloj();
   });
@@ -1323,34 +1809,37 @@ iniciar();
     codigo.focus();
     enviado.textContent = res.codigoDemo
       ? `Modo prueba: el código nuevo es ${res.codigoDemo}`
-      : "📧 Te mandé un código nuevo. Usá el último que te llegó.";
+      : "Te mandé un código nuevo. Usá el último que te llegó.";
     escribir(msjCodigo, "");
     arrancarReloj();
   });
 
+  // Cuenta regresiva con anillo: azul, amarillo los últimos 20 segundos, rojo al vencer.
   function arrancarReloj() {
     pararReloj();
     btnGuardar.disabled = false;
-    cuenta.classList.remove("vencido");
+    reloj.classList.remove("vencido", "urgente");
     const tic = () => {
-      const quedan = Math.max(0, Math.ceil((venceCodigo - Date.now()) / 1000));
+      const restanMs = Math.max(0, venceCodigo - Date.now());
+      const quedan = Math.ceil(restanMs / 1000);
+      relojArco.style.strokeDashoffset = String(VUELTA * (1 - restanMs / duracionCodigo));
       if (quedan === 0) {
-        cuenta.textContent = "⌛ El código venció. Pedí otro.";
-        cuenta.classList.add("vencido");
+        relojTexto.textContent = "0:00";
+        reloj.classList.add("vencido");
         btnGuardar.disabled = true;
+        escribir(msjCodigo, "El código venció. Pedí otro.", true);
         pararReloj();
         return;
       }
-      const m = Math.floor(quedan / 60);
-      const s = String(quedan % 60).padStart(2, "0");
-      cuenta.textContent = `⏱ Vence en ${m}:${s}`;
+      reloj.classList.toggle("urgente", quedan <= 20);
+      relojTexto.textContent = `${Math.floor(quedan / 60)}:${String(quedan % 60).padStart(2, "0")}`;
     };
     tic();
-    reloj = setInterval(tic, 500);
+    intervalo = setInterval(tic, 250);
   }
   function pararReloj() {
-    if (reloj) clearInterval(reloj);
-    reloj = null;
+    if (intervalo) clearInterval(intervalo);
+    intervalo = null;
   }
 
   vistas.codigo.addEventListener("submit", async e => {
@@ -1384,7 +1873,7 @@ iniciar();
       nuevaClave.value = nuevaClave2.value = codigo.value = "";
       usuario.value = nuevoUsuario.value.trim();
       guardarToken(res.token);
-      await cargarPanel("✅ Listo, guardé tu usuario y contraseña. La próxima vez entrá con esos.");
+      await cargarPanel("Listo, guardé tu usuario y contraseña. La próxima vez entrá con esos.");
     } catch (err) {
       escribir(msjCodigo, err.message, true);
     } finally {
@@ -1394,77 +1883,76 @@ iniciar();
 
   // ---------- Panel ----------
   async function cargarPanel(texto = "") {
+    const primeraVez = !estado;
     mostrar("panel");
-    if (!estado) {
+    if (primeraVez) {
       resumen.textContent = "Cargando...";
-      barra.style.width = "0";
+      faltan.textContent = "";
+      lista.innerHTML = "";
     }
-    escribir(msjPanel, texto || "Actualizando...");
+    escribir(msjPanel, texto || (primeraVez ? "" : "Actualizando..."));
     try {
       const res = await pedir({ accion: "adminEstado", token });
       if (!res) return;
       if (!res.ok) throw new Error(res.error || "Algo salió mal");
       estado = res;
       escribir(msjPanel, texto);
-      pintar();
+      pintar(true);
     } catch (err) {
       escribir(msjPanel, "No se pudo cargar: " + err.message, true);
     }
   }
 
-  function boton(texto, clase, alTocar) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = clase;
-    b.textContent = texto;
-    b.disabled = trabajando;
-    b.addEventListener("click", alTocar);
-    return b;
-  }
-
-  function pintar() {
+  function pintar(animar = false) {
     const { participantes: nombres, sorteados, asignaciones } = estado;
     const cuantos = nombres.filter(n => sorteados.includes(n)).length;
-    resumen.textContent = cuantos === nombres.length
-      ? `🎉 Ya sortearon todos (${cuantos} de ${nombres.length})`
-      : `Ya sortearon ${cuantos} de ${nombres.length}`;
-    barra.style.width = (nombres.length ? (100 * cuantos) / nombres.length : 0) + "%";
-    btnVer.textContent = verResultados ? "🙈 Ocultar a quién le toca" : "👁 Ver a quién le toca a cada uno";
+    const total = nombres.length;
+    txtCuantos.textContent = cuantos;
+    txtTotal.textContent = "de " + total;
+    anilloArco.style.strokeDashoffset = String(VUELTA * (1 - (total ? cuantos / total : 0)));
+    resumen.textContent = cuantos === total ? "¡Ya sortearon todos!" : `Ya sortearon ${cuantos} de ${total}`;
+    faltan.textContent = cuantos === total ? "No falta nadie 🎉" : `Faltan ${total - cuantos}`;
+
+    const t = document.createElement("span");
+    t.textContent = verResultados ? "Ocultar resultados" : "Ver a quién le toca";
+    btnVer.replaceChildren(icono(verResultados ? "eye-off" : "eye"), t);
     btnVer.setAttribute("aria-pressed", String(verResultados));
 
+    lista.classList.toggle("animar", animar);
     lista.innerHTML = "";
-    nombres.forEach(n => {
+    nombres.forEach((n, i) => {
       const sorteo = sorteados.includes(n);
       const li = document.createElement("li");
-      li.className = "admin-fila" + (sorteo ? " sorteo" : "");
+      li.className = "admin-fila";
       li.style.setProperty("--c", colorDe(n));
+      li.style.setProperty("--i", i);
 
       const foto = document.createElement("img");
-      foto.className = "avatar";
+      foto.className = "admin-foto";
       foto.alt = "";
-      foto.width = foto.height = 40;
+      foto.width = foto.height = 48;
       foto.src = fotoDe(n);
 
       const info = document.createElement("div");
       info.className = "admin-info";
       const nombre = document.createElement("strong");
       nombre.textContent = n;
-      const est = document.createElement("span");
-      est.className = "admin-estado";
-      est.textContent = sorteo ? "✅ Ya sorteó" : "⏳ Falta sortear";
-      info.append(nombre, est);
+      const chip = document.createElement("span");
+      chip.className = "chip " + (sorteo ? "chip-ok" : "chip-pend");
+      chip.append(icono(sorteo ? "check" : "clock"), sorteo ? "Ya sorteó" : "Falta sortear");
+      info.append(nombre, chip);
       if (verResultados) {
         const toca = document.createElement("span");
         toca.className = "admin-toca";
         const b = document.createElement("b");
         b.textContent = asignaciones[n] || "—";
-        toca.append("🎁 Le regala a ", b);
+        toca.append(icono("gift"), "Le regala a ", b);
         info.append(toca);
       }
       li.append(foto, info);
 
       if (sorteo && confirmando !== n) {
-        const r = boton("↺ Resetear", "admin-resetear", () => {
+        const r = boton("rotate", "Resetear", "admin-resetear", () => {
           confirmando = n;
           escribir(msjPanel, "");
           pintar();
@@ -1479,11 +1967,18 @@ iniciar();
         const caja = document.createElement("div");
         caja.className = "admin-confirmar";
         const p = document.createElement("p");
-        p.textContent = `¿Resetear a ${n}? Va a poder sortear de nuevo. Si queda alguien sin sortear, ` +
+        p.className = "admin-confirmar-texto";
+        const txt = document.createElement("span");
+        txt.textContent = `¿Resetear a ${n}? Va a poder sortear de nuevo. Si queda alguien sin sortear, ` +
           `le cambio a quién le toca, así el que tocó sin querer no sabe el resultado.`;
-        const si = boton("Sí, resetear", "btn admin-si", () => resetear(n));
-        const no = boton("Cancelar", "btn admin-no", () => { confirmando = ""; pintar(); });
-        caja.append(p, si, no);
+        p.append(icono("alert"), txt);
+        const botones = document.createElement("div");
+        botones.className = "admin-confirmar-botones";
+        botones.append(
+          boton("rotate", "Sí, resetear", "admin-btn admin-btn-peligro admin-si", () => resetear(n)),
+          boton("x", "Cancelar", "admin-btn admin-btn-secundario admin-no", () => { confirmando = ""; pintar(); }),
+        );
+        caja.append(p, botones);
         li.append(caja);
       }
       lista.append(li);
@@ -1501,9 +1996,9 @@ iniciar();
       confirmando = "";
       trabajando = false;
       await cargarPanel(res.cambio
-        ? `✅ Listo: ${nombre} puede sortear de nuevo y le cambié a quién le toca. ` +
+        ? `Listo: ${nombre} puede sortear de nuevo y le cambié a quién le toca. ` +
           `Si alguien tocó su nombre sin querer, que recargue la página y elija el suyo.`
-        : `✅ Listo: ${nombre} puede sortear de nuevo. Le va a tocar la misma persona ` +
+        : `Listo: ${nombre} puede sortear de nuevo. Le va a tocar la misma persona ` +
           `(no se podía cambiar sin tocar a los que ya sortearon).`);
     } catch (err) {
       escribir(msjPanel, "No se pudo resetear: " + err.message, true);
@@ -1531,11 +2026,11 @@ iniciar();
     confirmando = "";
     lista.innerHTML = "";
     mostrar("login", usuario);
-    escribir(msjLogin, "Saliste del modo admin.");
+    escribir(msjLogin, "Cerraste la sesión de admin.");
   });
 
   // ---------- Modo prueba: imita al Apps Script ----------
-  // En la prueba sirve cualquier usuario y contraseña, y el código se muestra en pantalla.
+  // En la prueba sirve cualquier usuario, contraseña y mail, y el código se muestra en pantalla.
   let codigoDemo = null;
   window.adminDemo = function (p) {
     if (p.accion === "adminEntrar") return { ok: true, token: "demo" };
