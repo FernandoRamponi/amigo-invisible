@@ -787,15 +787,19 @@ iniciar();
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>// =====================================================
 // MINI SANTA 3D (Three.js)
-// Un Santa petiso y cabezón que vive abajo de la tarjeta: mira para arriba,
-// salta, se agarra del borde de la tarjeta, patalea colgado, se resbala,
-// se cae de cola, queda mareado con estrellitas y se vuelve a levantar.
-// Tocalo para que salte enseguida.
+// Un Santa petiso y cabezón que vive abajo de la tarjeta:
+//   mira la tarjeta → se da vuelta → salta de espaldas y se cuelga del borde →
+//   patalea → se resbala y se cae → al chocar el piso SE DESARMA en piezas →
+//   las piezas vuelven volando y se REARMA → festeja → BAILA → y vuelta a empezar.
+// Tocalo mientras mira la tarjeta para que salte enseguida.
+// Si hay un mensaje en la tarjeta (por ejemplo, el resultado), no se cuelga
+// para no taparlo: directamente baila.
 // Si el navegador no soporta 3D, queda el Santa plano (SVG) de respaldo.
 // =====================================================
 (function () {
   const contenedor = document.querySelector(".santa-baile");
   const tarjeta = document.querySelector(".tarjeta-sorteo");
+  const mensaje = document.getElementById("mensaje");
   if (!contenedor || !tarjeta || typeof THREE === "undefined") return;
 
   // ¿Hay WebGL?
@@ -816,7 +820,6 @@ iniciar();
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.localClippingEnabled = true;
 
   const escena = new THREE.Scene();
   const camara = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
@@ -830,12 +833,8 @@ iniciar();
   relleno.position.set(-2, 1, 3);
   escena.add(relleno);
 
-  // Todo lo que pase por encima del borde de la tarjeta queda "detrás" de ella
-  // (se recorta). Los guantes no se recortan: así se ven agarrando el borde.
-  const borde = new THREE.Plane(new THREE.Vector3(0, -1, 0), 100);
-
   // ---------- Materiales ----------
-  const mat = c => new THREE.MeshToonMaterial({ color: c, clippingPlanes: [borde] });
+  const mat = c => new THREE.MeshToonMaterial({ color: c });
   const rojo = mat(0xe01b34);
   const rojoOscuro = mat(0xa8102a);
   const blanco = mat(0xffffff);
@@ -843,8 +842,8 @@ iniciar();
   const negro = mat(0x1e1e24);
   const dorado = mat(0xffc93c);
   const naricita = mat(0xff9e86);
-  const rosa = new THREE.MeshToonMaterial({ color: 0xff8a9a, transparent: true, opacity: 0.7, clippingPlanes: [borde] });
-  const verde = new THREE.MeshToonMaterial({ color: 0x1e9a55 });   // guantes: sin recorte
+  const rosa = new THREE.MeshToonMaterial({ color: 0xff8a9a, transparent: true, opacity: 0.7 });
+  const verde = mat(0x1e9a55);
 
   const esfera = (r, m, seg = 24) => new THREE.Mesh(new THREE.SphereGeometry(r, seg, Math.round(seg * 0.75)), m);
 
@@ -883,6 +882,7 @@ iniciar();
   function pierna(lado) {
     const g = new THREE.Group();
     g.position.set(0.17 * lado, 0.36, 0);
+    g.rotation.z = 0.08 * lado;
     const muslo = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.26, 16), rojoOscuro);
     muslo.position.y = -0.13;
     const bota = esfera(0.14, negro);
@@ -925,6 +925,7 @@ iniciar();
   function brazo(lado) {
     const hombro = new THREE.Group();
     hombro.position.set(0.36 * lado, 0.47, 0);
+    hombro.rotation.z = 0.25 * lado;
     const manga = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.3, 14), rojo);
     manga.position.y = -0.15;
     const puno = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.035, 8, 20), blanco);
@@ -1003,7 +1004,7 @@ iniciar();
   punta.add(cono, bolita);
   gorro.add(banda, base, punta);
 
-  // Estrellitas de mareo
+  // Estrellitas de mareo (cuando la cabeza queda tirada en el piso)
   const formaEstrella = new THREE.Shape();
   for (let i = 0; i < 10; i++) {
     const r = i % 2 === 0 ? 0.14 : 0.062;
@@ -1014,13 +1015,123 @@ iniciar();
   const geoEstrella = new THREE.ShapeGeometry(formaEstrella);
   const estrellas = [0xffd23d, 0xfff3a0, 0xffb627].map(c => {
     const e = new THREE.Mesh(geoEstrella, new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide, transparent: true }));
+    e.visible = false;
     escena.add(e);
     return e;
   });
 
+  // ---------- Piezas que se desarman ----------
+  // Cada pieza tiene un "ancla": un punto invisible en su lugar de siempre,
+  // que es adonde vuelve volando cuando el Santa se rearma.
+  function ancla(padre, obj) {
+    const a = new THREE.Object3D();
+    a.position.copy(obj.position);
+    a.rotation.copy(obj.rotation);
+    padre.add(a);
+    return a;
+  }
+  const PIEZAS = [
+    { obj: piernaIzq, padre: cuerpo, radio: 0.16, centro: new THREE.Vector3(0, -0.17, 0.03), vel: [-1.5, 2.0, 0.5], demora: 0 },
+    { obj: piernaDer, padre: cuerpo, radio: 0.16, centro: new THREE.Vector3(0, -0.17, 0.03), vel: [1.6, 2.2, 0.4], demora: 0.04 },
+    { obj: brazoIzq, padre: cadera, radio: 0.12, centro: new THREE.Vector3(0, -0.22, 0), vel: [-2.2, 2.8, 0.4], demora: 0.12 },
+    { obj: brazoDer, padre: cadera, radio: 0.12, centro: new THREE.Vector3(0, -0.22, 0), vel: [2.2, 3.0, 0.3], demora: 0.16 },
+    { obj: cabeza, padre: cadera, radio: 0.4, centro: new THREE.Vector3(0, 0.3, 0), vel: [-0.7, 3.8, 0.4], demora: 0.26 },
+    { obj: gorro, padre: cabeza, radio: 0.24, centro: new THREE.Vector3(0, 0.22, 0), vel: [0.9, 4.6, 0.2], demora: 0.4 },
+  ];
+  PIEZAS.forEach(p => {
+    p.ancla = ancla(p.padre, p.obj);
+    p.v = new THREE.Vector3();
+    p.giro = new THREE.Vector3();
+    p.desde = new THREE.Vector3();
+    p.desdeQ = new THREE.Quaternion();
+  });
+
+  let estado = "armado";   // "armado" | "desarmado" | "rearmando"
+
+  function desarmar() {
+    escena.updateMatrixWorld(true);
+    // Primero el gorro (que está adentro de la cabeza), después el resto
+    [...PIEZAS].reverse().forEach(p => escena.attach(p.obj));
+    PIEZAS.forEach(p => {
+      const azar = () => (Math.random() - 0.5) * 0.6;
+      p.v.set(p.vel[0] + azar(), p.vel[1] + azar(), p.vel[2] + azar() * 0.5);
+      p.giro.set((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 16);
+      p.obj.scale.set(1, 1, 1);
+    });
+    estado = "desarmado";
+  }
+
+  const centroMundo = new THREE.Vector3();
+  function moverPiezas(dt, limiteX) {
+    const g = 14;
+    PIEZAS.forEach(p => {
+      p.v.y -= g * dt;
+      p.obj.position.addScaledVector(p.v, dt);
+      p.obj.rotation.x += p.giro.x * dt;
+      p.obj.rotation.y += p.giro.y * dt;
+      p.obj.rotation.z += p.giro.z * dt;
+      // Rebota en el piso (usando el centro real de la pieza)
+      p.obj.updateMatrixWorld();
+      centroMundo.copy(p.centro);
+      p.obj.localToWorld(centroMundo);
+      const hundido = pisoY + p.radio - centroMundo.y;
+      if (hundido > 0) {
+        p.obj.position.y += hundido;
+        if (p.v.y < 0) p.v.y = -p.v.y * 0.42;
+        p.v.x *= 0.72; p.v.z *= 0.72;
+        p.giro.multiplyScalar(0.65);
+      }
+      // No se va del lienzo
+      if (Math.abs(p.obj.position.x) > limiteX) {
+        p.obj.position.x = Math.sign(p.obj.position.x) * limiteX;
+        p.v.x *= -0.5;
+      }
+      if (Math.abs(p.obj.position.z) > 0.7) {
+        p.obj.position.z = Math.sign(p.obj.position.z) * 0.7;
+        p.v.z *= -0.5;
+      }
+    });
+  }
+
+  function empezarRearmado() {
+    PIEZAS.forEach(p => {
+      p.desde.copy(p.obj.position);
+      p.desdeQ.copy(p.obj.quaternion);
+    });
+    estado = "rearmando";
+  }
+
+  const destino = new THREE.Vector3();
+  const destinoQ = new THREE.Quaternion();
+  function rearmar(k) {
+    // k va de 0 a 1. Cada pieza sale con su demora: piernas, brazos, cabeza y al final el gorro.
+    santa.updateMatrixWorld(true);
+    PIEZAS.forEach(p => {
+      if (p.obj === gorro) cabeza.updateMatrixWorld(true);
+      const kk = suave(clamp01((k - p.demora) / 0.55));
+      p.ancla.getWorldPosition(destino);
+      p.ancla.getWorldQuaternion(destinoQ);
+      p.obj.position.lerpVectors(p.desde, destino, kk);
+      p.obj.position.y += Math.sin(kk * PI) * 0.7;          // vuelve en arco
+      p.obj.quaternion.copy(p.desdeQ).slerp(destinoQ, kk);
+    });
+  }
+
+  function terminarRearmado() {
+    // Vuelve cada pieza a su lugar exacto dentro del Santa
+    PIEZAS.forEach(p => {
+      p.padre.add(p.obj);
+      p.obj.position.copy(p.ancla.position);
+      p.obj.rotation.copy(p.ancla.rotation);
+      p.obj.scale.set(1, 1, 1);
+    });
+    estado = "armado";
+  }
+
   // ---------- Medidas: dónde está el borde de la tarjeta y dónde el piso ----------
   const v = new THREE.Vector3();
-  let altoCanvas = 380;
+  let altoCanvas = 410;
+  let anchoMundo = 6;
   function filaAMundoY(fila) {
     // Convierte una fila de píxeles del lienzo en altura del mundo 3D (en el plano del Santa)
     v.set(0, 1 - (2 * fila) / altoCanvas, 0.5).unproject(camara);
@@ -1031,7 +1142,7 @@ iniciar();
 
   function ajustar() {
     const w = canvas.clientWidth || 360;
-    altoCanvas = canvas.clientHeight || 380;
+    altoCanvas = canvas.clientHeight || 410;
     renderer.setSize(w, altoCanvas, false);
     camara.aspect = w / altoCanvas;
     const distancia = altoCanvas / PIXELES_POR_UNIDAD / (2 * Math.tan((camara.fov * PI) / 360));
@@ -1039,6 +1150,7 @@ iniciar();
     camara.lookAt(0, 0.3, 0);
     camara.updateProjectionMatrix();
     camara.updateMatrixWorld();
+    anchoMundo = w / PIXELES_POR_UNIDAD;
   }
   ajustar();
   window.addEventListener("resize", ajustar);
@@ -1050,70 +1162,92 @@ iniciar();
     const rt = tarjeta.getBoundingClientRect();
     pisoY = filaAMundoY(altoCanvas - 26);
     bordeY = filaAMundoY(rt.bottom - rc.top - 2);
-    borde.constant = bordeY;
   }
 
-  // ---------- Animación: salta, se agarra, se cae ----------
+  // ---------- Línea de tiempo ----------
   const reloj = new THREE.Clock();
-  const CICLO = 10;                 // segundos que dura toda la escena
-  const T = {                       // momentos de cada parte
-    mira: 0, agacha: 2.6, salta: 2.95, agarra: 3.4, cuelga: 3.55,
-    resbala: 5.9, cae: 6.35, golpe: 6.85, mareado: 7.15, levanta: 8.6, sacude: 9.2,
+  const T = {
+    mira: 0, vuelta: 2.2, agacha: 2.6, salta: 2.95, agarra: 3.4, cuelga: 3.55,
+    resbala: 5.9, cae: 6.3, golpe: 6.75, rearma: 8.3, festeja: 9.5, baile: 10.0, fin: 15.0,
   };
+  const CICLO = T.fin;
   let inicio = 0;
 
-  // Tocalo: si está esperando, salta ya
+  // Tocalo: si está mirando la tarjeta, salta ya
   contenedor.addEventListener("click", () => {
     const c = (reloj.getElapsedTime() - inicio) % CICLO;
-    if (c < T.agacha) inicio = reloj.getElapsedTime() - T.agacha;
+    if (c < T.vuelta) inicio = reloj.getElapsedTime() - T.vuelta;
   });
 
   const clamp01 = x => Math.min(1, Math.max(0, x));
   const salida = k => 1 - (1 - k) * (1 - k);     // rápido al principio, frena al final
   const entrada = k => k * k;                     // arranca lento y acelera (caída)
+  const suave = k => k * k * (3 - 2 * k);         // suave al principio y al final
   const lomo = (u, desde, dura, alto) => (u > desde && u < desde + dura ? Math.sin(((u - desde) / dura) * PI) * alto : 0);
   const prog = (c, a, b) => clamp01((c - a) / (b - a));
 
   const NEUTRO = {
-    giro: 0, colgZ: 0, colgX: 0, cX: 0, cZ: 0, hX: 0, hZ: 0,
+    giro: 0, tumbo: 0, colgZ: 0, colgX: 0, cX: 0, cZ: 0, hX: 0, hZ: 0,
     aIX: 0, aIZ: -0.25, aDX: 0, aDZ: 0.25,
     pIX: 0, pIZ: -0.08, pDX: 0, pDZ: 0.08,
-    ojos: 1, estrellas: 0,
+    ojos: 1,
   };
   const actual = Object.assign({}, NEUTRO);
-  const SENTADO = -0.24;           // altura del cuerpo sentado de cola en el piso
   const BRAZOS_ARRIBA = 2.95;
+  const TORSO_EN_EL_PISO = -0.27;   // altura del cuerpo sin piernas, apoyado en el piso
+
+  // ---------- Baile final ----------
+  // (Provisorio: acá va el baile que pida el usuario.)
+  function baileFinal(u, p) {
+    const beat = u * 2.2 * PI;
+    p.giro = Math.sin(u * 1.1) * 0.5;
+    p.cZ = Math.sin(beat) * 0.18;
+    p.hZ = -Math.sin(beat) * 0.12;
+    p.aIZ = -1.2 - Math.sin(beat) * 0.6;
+    p.aDZ = 1.2 - Math.sin(beat) * 0.6;
+    p.pIX = Math.max(0, Math.sin(beat)) * -0.5;
+    p.pDX = Math.max(0, -Math.sin(beat)) * -0.5;
+    return Math.abs(Math.sin(beat)) * 0.08;      // altura del saltito
+  }
 
   function escenaEn(c, alturaColgado) {
     // Devuelve la pose objetivo, la altura (y) y el aplastado para el momento c del ciclo
     const p = Object.assign({}, NEUTRO);
     let y = 0, aplaste = 0, rapido = false;
 
-    if (c < T.agacha) {
+    if (c < T.vuelta) {
       // Mira la tarjeta, respira y da saltitos de ganas
       p.hX = -0.38;
       aplaste = Math.sin(c * 4) * 0.015;
-      y = lomo(c, 1.2, 0.3, 0.07) + lomo(c, 1.55, 0.3, 0.07);
+      y = lomo(c, 1.1, 0.3, 0.07) + lomo(c, 1.45, 0.3, 0.07);
       p.aIZ = -0.35; p.aDZ = 0.35;
+    } else if (c < T.agacha) {
+      // Se da vuelta para quedar de espaldas, mirando la tarjeta
+      p.giro = PI;
+      p.hX = -0.3;
+      y = lomo(c, T.vuelta, 0.3, 0.08);
     } else if (c < T.salta) {
       // Se agacha para tomar impulso
       const k = salida(prog(c, T.agacha, T.salta));
+      p.giro = PI;
       aplaste = 0.2 * k;
       p.cX = 0.25; p.hX = -0.45;
       p.aIX = 0.7; p.aDX = 0.7; p.aIZ = -0.4; p.aDZ = 0.4;
       p.pIZ = -0.16; p.pDZ = 0.16;
       rapido = true;
     } else if (c < T.agarra) {
-      // ¡Salta!
+      // ¡Salta de espaldas!
       const k = prog(c, T.salta, T.agarra);
+      p.giro = PI;
       y = alturaColgado * salida(k);
       aplaste = -0.14 * (1 - k);
       p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
       p.pIX = 0.35; p.pDX = 0.2; p.hX = -0.3;
       rapido = true;
     } else if (c < T.cuelga) {
-      // Se agarra con un tironcito
+      // Se agarra del borde con un tironcito
       const k = prog(c, T.agarra, T.cuelga);
+      p.giro = PI;
       y = alturaColgado - Math.sin(k * PI) * 0.06;
       p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
       p.pIX = -0.3; p.pDX = 0.3;
@@ -1121,15 +1255,17 @@ iniciar();
     } else if (c < T.resbala) {
       // Colgado: patalea, se balancea e intenta subir dos veces
       const u = c - T.cuelga;
+      p.giro = PI;
       y = alturaColgado + lomo(u, 0.7, 0.55, 0.1) + lomo(u, 1.6, 0.55, 0.12);
       p.colgZ = Math.sin(u * 3.2) * 0.1;
       p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
       p.pIX = Math.sin(u * 12) * 0.55; p.pDX = -Math.sin(u * 12) * 0.55;
       p.pIZ = -0.12; p.pDZ = 0.12;
-      p.hX = 0.12;
+      p.hX = -0.1;
     } else if (c < T.cae) {
       // Se le resbala una mano y manotea
       const k = prog(c, T.resbala, T.cae);
+      p.giro = PI;
       y = alturaColgado - 0.05 * k;
       p.colgZ = -0.32 * salida(k) + Math.sin(c * 22) * 0.04;
       p.aIZ = -1.4 + Math.sin(c * 30) * 0.5; p.aIX = Math.sin(c * 26) * 0.4;
@@ -1140,54 +1276,61 @@ iniciar();
     } else if (c < T.golpe) {
       // Se cae
       const k = prog(c, T.cae, T.golpe);
-      y = alturaColgado - 0.05 + (SENTADO - alturaColgado + 0.05) * entrada(k);
-      p.colgX = -0.25;
+      p.giro = PI + k * 0.6;
+      y = (alturaColgado - 0.05) * (1 - entrada(k));
       p.aIZ = -2.4 + Math.sin(c * 25) * 0.45; p.aDZ = 2.4 + Math.sin(c * 25 + 1.3) * 0.45;
-      p.pIX = -1.2; p.pDX = -1.0;
+      p.pIX = -0.6; p.pDX = 0.4;
       p.ojos = 1.4;
       rapido = true;
-    } else if (c < T.mareado) {
-      // ¡Pum! Cae de cola
-      const k = prog(c, T.golpe, T.mareado);
-      y = SENTADO + Math.sin(k * PI) * 0.09;
-      aplaste = 0.22 * (1 - k);
-      p.cX = -0.15;
-      p.aIZ = -0.9; p.aDZ = 0.9;
-      p.pIX = -1.45; p.pDX = -1.45; p.pIZ = -0.2; p.pDZ = 0.2;
-      p.ojos = 0.3;
+    } else if (c < T.rearma) {
+      // ¡Pum! Se desarmó: el cuerpo queda en el piso, medio de costado
+      const u = c - T.golpe;
+      p.giro = PI + 0.6;
+      p.tumbo = 0.35;
+      y = TORSO_EN_EL_PISO + Math.max(0, Math.sin(Math.min(u / 0.35, 1) * PI)) * 0.25 * Math.max(0, 1 - u / 0.35);
+      aplaste = Math.max(0, 0.18 * (1 - u / 0.25));
       rapido = true;
-    } else if (c < T.levanta) {
-      // Mareado, con estrellitas girando
-      y = SENTADO;
-      p.cX = -0.15; p.cZ = Math.sin(c * 7 + 1) * 0.08;
-      p.hZ = Math.sin(c * 7) * 0.22; p.hX = Math.cos(c * 7) * 0.12;
-      p.aIZ = -0.9; p.aDZ = 0.9;
-      p.pIX = -1.45; p.pDX = -1.45; p.pIZ = -0.2; p.pDZ = 0.2;
-      p.ojos = 0.3;
-      p.estrellas = 1;
-    } else if (c < T.sacude) {
-      // Se levanta
-      const k = prog(c, T.levanta, T.sacude);
-      y = SENTADO + (0 - SENTADO) * salida(k) + lomo(k, 0.4, 0.6, 0.05);
-      p.cX = 0.15 * (1 - k);
-      p.aIZ = -0.6; p.aDZ = 0.6;
-      p.ojos = 0.8;
+    } else if (c < T.festeja) {
+      // Las piezas vuelven volando; el cuerpo se endereza y mira para adelante
+      const k = prog(c, T.rearma, T.festeja);
+      p.giro = 0;
+      y = TORSO_EN_EL_PISO * (1 - suave(clamp01(k / 0.45)));
+      p.ojos = 1.2;
+    } else if (c < T.baile) {
+      // ¡Ta-dá!
+      const k = prog(c, T.festeja, T.baile);
+      y = lomo(k, 0, 1, 0.22);
+      p.aIZ = -2.5; p.aDZ = 2.5;
+      p.hX = -0.15;
+      aplaste = k > 0.9 ? 0.06 : 0;
+      p.ojos = 1.1;
     } else {
-      // Se sacude y vuelve a mirar la tarjeta
-      const u = c - T.sacude;
-      const fuerza = Math.max(0, 1 - u / 0.6);
-      p.giro = Math.sin(u * 28) * 0.3 * fuerza;
-      p.hZ = Math.sin(u * 28 + 1) * 0.15 * fuerza;
-      p.hX = -0.38 * clamp01(u / 0.6);
-      p.aIZ = -0.45; p.aDZ = 0.45;
+      // Baile final
+      y = baileFinal(c - T.baile, p);
     }
     return { p, y, aplaste, rapido };
   }
 
+  // ---------- Animar ----------
+  let cAnterior = 0;
   function animar(t, dt) {
     medir();
     const alturaColgado = bordeY - 0.03 - ALTURA_MANOS - pisoY;   // cuánto sube hasta agarrarse
-    const c = (t - inicio) % CICLO;
+
+    // Si la tarjeta muestra un mensaje (por ejemplo, el resultado), no se cuelga para no taparlo: baila.
+    let c = (t - inicio) % CICLO;
+    if (c >= T.vuelta && cAnterior < T.vuelta && mensaje && mensaje.textContent.trim()) {
+      inicio = t - T.baile;
+      c = T.baile;
+    }
+
+    // Eventos: desarmarse al tocar el piso, rearmarse después
+    const enPiezas = c >= T.golpe && c < T.festeja;
+    if (enPiezas && estado === "armado" && c < T.rearma) desarmar();
+    if (estado === "desarmado" && c >= T.rearma && c < T.festeja) empezarRearmado();
+    if (!enPiezas && estado !== "armado") terminarRearmado();
+    cAnterior = c;
+
     const { p: objetivo, y, aplaste, rapido } = escenaEn(c, alturaColgado);
 
     // Pasar suave a la pose (más rápido en los momentos bruscos)
@@ -1196,17 +1339,25 @@ iniciar();
     const p = actual;
 
     santa.position.set(0, pisoY + y, 0);
-    santa.rotation.y = p.giro;
+    santa.rotation.set(0, p.giro, p.tumbo);
     colgador.rotation.set(p.colgX, 0, p.colgZ);
     cuerpo.scale.set(1 + aplaste * 0.6, 1 - aplaste, 1 + aplaste * 0.6);
     cadera.rotation.set(p.cX, 0, p.cZ);
-    cabeza.rotation.set(p.hX, 0, p.hZ);
-    brazoIzq.rotation.set(p.aIX, 0, p.aIZ);
-    brazoDer.rotation.set(p.aDX, 0, p.aDZ);
-    piernaIzq.rotation.set(p.pIX, 0, p.pIZ);
-    piernaDer.rotation.set(p.pDX, 0, p.pDZ);
 
-    // Ojos: parpadeo, ojos grandes del susto, ojos chiquitos de mareo
+    if (estado === "armado") {
+      cabeza.rotation.set(p.hX, 0, p.hZ);
+      brazoIzq.rotation.set(p.aIX, 0, p.aIZ);
+      brazoDer.rotation.set(p.aDX, 0, p.aDZ);
+      piernaIzq.rotation.set(p.pIX, 0, p.pIZ);
+      piernaDer.rotation.set(p.pDX, 0, p.pDZ);
+      gorro.rotation.set(0, 0, -0.12);
+    } else if (estado === "desarmado") {
+      moverPiezas(dt, anchoMundo / 2 - 0.35);
+    } else {
+      rearmar(prog(c, T.rearma, T.festeja));
+    }
+
+    // Ojos: parpadeo y ojos grandes del susto
     const parpadeo = (t % 3.2) < 0.12 ? 0.15 : 1;
     [ojoIzq, ojoDer].forEach(o => o.scale.set(p.ojos, p.ojos * parpadeo, p.ojos));
 
@@ -1214,22 +1365,28 @@ iniciar();
     punta.rotation.z = Math.sin(t * 3) * 0.25 - 0.3;
     punta.rotation.x = Math.cos(t * 3) * 0.12;
 
-    // Estrellitas girando arriba de la cabeza
-    cabeza.getWorldPosition(v);
+    // Estrellitas girando sobre la cabeza tirada en el piso
+    const mostrarEstrellas = estado === "desarmado" && c > T.golpe + 0.5;
+    if (mostrarEstrellas) {
+      cabeza.updateMatrixWorld(true);
+      v.set(0, 0.3, 0);
+      cabeza.localToWorld(v);
+    }
     estrellas.forEach((e, i) => {
+      e.visible = mostrarEstrellas;
+      if (!mostrarEstrellas) return;
       const a = t * 4 + (i * PI * 2) / estrellas.length;
-      e.position.set(v.x + Math.cos(a) * 0.62, v.y + 0.7 + Math.sin(a * 2) * 0.06, v.z + Math.sin(a) * 0.4);
+      e.position.set(v.x + Math.cos(a) * 0.5, v.y + 0.55 + Math.sin(a * 2) * 0.05, v.z + Math.sin(a) * 0.35);
       e.lookAt(camara.position);
       e.rotation.z += t * 3;
-      e.material.opacity = p.estrellas;
-      e.visible = p.estrellas > 0.05;
     });
 
     // Sombra en el piso: más chica y suave cuanto más alto está
     sombra.position.set(santa.position.x, pisoY + 0.002, 0);
-    const s = Math.max(0.25, 1 - Math.max(0, y) * 0.35);
+    const alto = Math.max(0, y);
+    const s = Math.max(0.25, 1 - alto * 0.35);
     sombra.scale.set(s, s, s);
-    sombra.material.opacity = Math.max(0.25, 1 - Math.max(0, y) * 0.3);
+    sombra.material.opacity = Math.max(0.25, 1 - alto * 0.3);
   }
 
   // ---------- Bucle (solo cuando se ve) ----------
