@@ -770,7 +770,7 @@ body:has(.admin[open]) { overflow: hidden; }
   filter: drop-shadow(0 0 6px rgba(124, 196, 255, 0.8));
   transition: stroke-dashoffset 0.6s ease, stroke 0.3s;
 }
-.admin-reloj .anillo-arco { transition: stroke-dashoffset 0.5s linear, stroke 0.3s; }
+.admin-reloj .anillo-arco { transition: stroke 0.3s; } /* avanza solo, cada 1/10 de segundo */
 .admin-reloj.urgente .anillo-arco { stroke: var(--a-ambar); filter: drop-shadow(0 0 6px rgba(255, 200, 87, 0.8)); }
 .admin-reloj.vencido .anillo-arco { stroke: var(--a-rojo); }
 .admin-anillo .anillo-arco { stroke: var(--a-verde); filter: drop-shadow(0 0 6px rgba(67, 227, 150, 0.7)); }
@@ -1836,7 +1836,7 @@ iniciar();
       relojTexto.textContent = `${Math.floor(quedan / 60)}:${String(quedan % 60).padStart(2, "0")}`;
     };
     tic();
-    intervalo = setInterval(tic, 250);
+    intervalo = setInterval(tic, 100);
   }
   function pararReloj() {
     if (intervalo) clearInterval(intervalo);
