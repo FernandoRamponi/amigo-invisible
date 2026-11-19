@@ -29,9 +29,36 @@ const COLORES_NOMBRES = [
   "#ff4d6d", "#ffc93c", "#3ddc84", "#4fd1ff", "#b388ff", "#ff8a3d",
   "#ff6fb5", "#7cf5e0", "#c6ff4d", "#6e8bff", "#ff5ce1", "#ffe066",
 ];
+// Algunos tienen su estilo propio: Juani rosa con un corazón pixelado,
+// Daniela y Ezequiel con colores oscuros y sin brillo ("mate").
+const ESTILOS_NOMBRES = {
+  Juani: { color: "#ff4fa3", corazon: true },
+  Daniela: { color: "#5a2d45", mate: true },
+  Ezequiel: { color: "#2f4054", mate: true },
+};
+function estiloDe(nombre) {
+  return ESTILOS_NOMBRES[nombre] || {};
+}
 function colorDe(nombre) {
+  if (estiloDe(nombre).color) return estiloDe(nombre).color;
   const i = participantes.indexOf(nombre);
   return COLORES_NOMBRES[(i < 0 ? 0 : i) % COLORES_NOMBRES.length];
+}
+// Pone el estilo propio (sin brillo y/o corazón) en una barra de nombre.
+// `dondeCorazon` es el elemento al que se le agrega el corazón al lado del nombre.
+function decorarNombre(barra, nombre, dondeCorazon) {
+  const estilo = estiloDe(nombre);
+  barra.classList.toggle("mate", !!estilo.mate);
+  if (!estilo.corazon) return;
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("class", "corazon");
+  svg.setAttribute("viewBox", "0 0 10 9");
+  svg.setAttribute("aria-hidden", "true");
+  const uso = document.createElementNS(ns, "use");
+  uso.setAttribute("href", "#i-corazon");
+  svg.append(uso);
+  dondeCorazon.append(svg);
 }
 
 // Foto de perfil de cada participante: los de esta lista usan el duende hombre,
@@ -61,7 +88,12 @@ const CLAVE_DEMO = "amigo-invisible-demo-datos";
 const demo = (() => {
   const base = { nombres: ["Ana", "Bruno", "Carla", "Diego", "Euge"], asignaciones: null, sorteados: [], ids: {} };
   if (!MODO_DEMO) return base;
-  try { return Object.assign(base, JSON.parse(localStorage.getItem(CLAVE_DEMO)) || {}); } catch (e) { return base; }
+  try {
+    const guardado = JSON.parse(localStorage.getItem(CLAVE_DEMO)) || {};
+    // Si cambiaron los nombres de prueba, arranca de cero.
+    if (JSON.stringify(guardado.nombres) !== JSON.stringify(base.nombres)) return base;
+    return Object.assign(base, guardado);
+  } catch (e) { return base; }
 })();
 function guardarDemo() {
   try { localStorage.setItem(CLAVE_DEMO, JSON.stringify(demo)); } catch (e) { /* ignorar */ }
@@ -195,6 +227,7 @@ function armarLista() {
     const texto = document.createElement("span");
     texto.textContent = n;
     op.append(foto, texto);
+    decorarNombre(op, n, op);
     op.addEventListener("click", () => elegir(n, true));
     li.appendChild(op);
     selectorLista.appendChild(li);
@@ -232,6 +265,7 @@ function elegir(nombre, desdeLista = false) {
   selectorAvatar.classList.remove("oculto");
   selectorBoton.style.setProperty("--c", color);
   selectorBoton.classList.add("elegido");
+  decorarNombre(selectorBoton, nombre, selectorTexto);
   opciones().forEach(op => op.setAttribute("aria-selected", String(op.dataset.nombre === nombre)));
   if (mensaje.classList.contains("error")) mostrarMensaje("");
   cerrarLista(desdeLista);

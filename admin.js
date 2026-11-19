@@ -487,6 +487,7 @@
       chip.className = "chip " + (sorteo ? "chip-ok" : "chip-pend");
       chip.append(icono(sorteo ? "check" : "clock"), sorteo ? "Ya sorteó" : "Falta sortear");
       info.append(nombre, chip);
+      decorarNombre(li, n, nombre);
       if (verResultados) {
         const toca = document.createElement("span");
         toca.className = "admin-toca";
