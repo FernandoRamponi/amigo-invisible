@@ -198,7 +198,7 @@ h1 {
 .selector-boton .avatar { width: 38px; height: 38px; }
 .avatar.oculto { display: none; }
 
-/* Ventanita "¿Sos vos?" al elegir un nombre */
+/* Alerta de confirmación al elegir un nombre */
 .confirmar {
   --c: var(--verde);
   width: min(360px, calc(100vw - 32px));
@@ -219,16 +219,7 @@ h1 {
   border-radius: 18px;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
 }
-.confirmar-foto { width: 96px; height: 96px; border-width: 3px; margin: 0 auto 10px; display: block; }
-.confirmar-titulo { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--verde); }
-.confirmar-nombre {
-  margin: 4px 0 10px;
-  font-size: 2rem;
-  font-weight: 800;
-  color: color-mix(in srgb, var(--c) 75%, #000);
-}
-.confirmar-nombre .corazon { width: 28px; height: 25px; vertical-align: -2px; }
-.confirmar-texto { margin: 0 0 18px; font-size: 0.92rem; line-height: 1.4; color: var(--gris); }
+.confirmar-texto { margin: 4px 0 20px; font-size: 1.15rem; font-weight: 600; line-height: 1.45; color: var(--texto); }
 .confirmar-botones { display: flex; gap: 10px; }
 .confirmar-botones .btn { flex: 1; padding: 14px 10px; font-size: 1.05rem; }
 .confirmar-si { color: #fff; background: var(--verde); box-shadow: 0 4px 0 #10502b; }

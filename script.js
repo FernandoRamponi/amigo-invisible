@@ -62,14 +62,11 @@ function decorarNombre(barra, nombre, dondeCorazon) {
   dondeCorazon.append(svg);
 }
 
-// Foto de perfil de cada participante: Fernando y Juani tienen su duende;
-// todos los demás, el sombrero de duende.
-const FOTOS = {
-  Fernando: "img/duende-hombre.jpg",
-  Juani: "img/duende-mujer.jpg",
-};
+// Foto de perfil de cada participante: los de esta lista usan el duende hombre,
+// el resto la duende mujer.
+const DUENDE_HOMBRE = ["Fernando", "Nacho", "Ezequiel", "Charli"];
 function fotoDe(nombre) {
-  return FOTOS[nombre] || "img/sombrero.jpg";
+  return DUENDE_HOMBRE.includes(nombre) ? "img/duende-hombre.jpg" : "img/duende-mujer.jpg";
 }
 
 // ---------- Comunicación con el Apps Script ----------
@@ -282,10 +279,8 @@ function elegir(nombre, desdeLista = false) {
   cerrarLista(desdeLista);
 }
 
-// ---------- Confirmación: "¿Sos vos?" ----------
+// ---------- Confirmación al elegir un nombre ----------
 const confirmar = document.getElementById("confirmar");
-const confirmarFoto = document.getElementById("confirmar-foto");
-const confirmarNombre = document.getElementById("confirmar-nombre");
 let nombrePendiente = "";
 
 function pedirConfirmacion(nombre) {
@@ -295,10 +290,6 @@ function pedirConfirmacion(nombre) {
   }
   nombrePendiente = nombre;
   cerrarLista();
-  confirmar.style.setProperty("--c", colorDe(nombre));
-  confirmarFoto.src = fotoDe(nombre);
-  confirmarNombre.textContent = nombre;
-  decorarNombre(confirmar, nombre, confirmarNombre);
   confirmar.showModal();
   document.getElementById("confirmar-si").focus();
 }
