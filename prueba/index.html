@@ -999,8 +999,8 @@ iniciar();
   cejaDer.rotation.z = -0.25;
   cejaDer.position.x = 0.13;
   // Lengua (sale en la parte "¡qué locura!" del baile)
-  const lengua = esfera(0.05, mat(0xff6b81), 14);
-  lengua.position.set(0, 0.15, 0.35);
+  const lengua = esfera(0.065, mat(0xff6b81), 14);
+  lengua.position.set(0, 0.14, 0.36);
   lengua.scale.setScalar(0.001);
   cabeza.add(cara, barba, lengua, bigoteIzq, bigoteDer, nariz, mejillaIzq, mejillaDer, ojoIzq, ojoDer, cejaIzq, cejaDer);
 
@@ -1612,7 +1612,7 @@ iniciar();
   function cuadro() {
     requestAnimationFrame(cuadro);
     if (!visible || document.hidden) return;
-    const t = typeof window.__santaT === "number" ? window.__santaT : reloj.getElapsedTime();   // PRUEBA
+    const t = reloj.getElapsedTime();
     const dt = Math.min(Math.max(t - anterior, 0), 0.05);
     anterior = t;
     animar(t, dt);
