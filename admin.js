@@ -12,10 +12,18 @@
   const CLAVE_SESION = MODO_DEMO ? "amigo-invisible-demo-admin" : "amigo-invisible-admin";
   const VUELTA = 2 * Math.PI * 52; // largo del círculo de los anillos (r = 52)
 
+  // Código de acceso de 4 números que se pide antes del login. No está escrito tal cual:
+  // se guarda su huella SHA-256 ("amigo-invisible|" + código). Es solo un candado para
+  // que los curiosos no anden probando; la seguridad de verdad es la contraseña.
+  const HUELLA_PIN = "d0e83645157fb37faba4fb1387ec788598b314471630adf7ce58dd2acca18c77";
+  const CLAVE_PIN_ESPERA = "amigo-invisible-pin-espera";
+  const MAX_FALLOS_PIN = 5;
+
   const $ = id => document.getElementById(id);
   const btnAdmin = $("btn-admin");
   const admin = $("admin");
   const vistas = {
+    pin: $("admin-pin"),
     login: $("admin-login"),
     mail: $("admin-mail"),
     codigo: $("admin-codigo"),
@@ -113,6 +121,7 @@
   }
 
   const TITULOS = {
+    pin: ["Código de acceso", "lock"],
     login: ["Entrar como admin", "shield"],
     mail: ["Crear o cambiar contraseña", "key"],
     codigo: ["Crear o cambiar contraseña", "key"],
@@ -141,11 +150,12 @@
   }
 
   // ---------- Abrir y cerrar ----------
+  // Si ya hay una sesión de admin abierta va directo al panel; si no, primero pide el código.
   function abrir() {
     if (typeof admin.showModal === "function") admin.showModal();
     else admin.setAttribute("open", "");
     if (token) cargarPanel();
-    else mostrar("login", usuario);
+    else mostrarPin();
   }
   function cerrar() {
     confirmando = "";
@@ -156,6 +166,116 @@
   btnAdmin.addEventListener("click", abrir);
   $("admin-cerrar").addEventListener("click", cerrar);
   admin.addEventListener("close", pararReloj);
+
+  // ---------- Código de acceso (4 números) ----------
+  const puntos = [...$("admin-pin-puntos").children];
+  const cajaPuntos = $("admin-pin-puntos");
+  const teclas = [...vistas.pin.querySelectorAll(".admin-tecla")];
+  const msjPin = $("admin-pin-msj");
+  let pin = "";
+  let fallosPin = 0;
+  let revisando = false;
+  let relojEspera = null;
+
+  function pintarPuntos(estadoPuntos = "") {
+    puntos.forEach((p, i) => p.classList.toggle("lleno", i < pin.length));
+    cajaPuntos.className = "admin-pin-puntos" + (estadoPuntos ? " " + estadoPuntos : "");
+  }
+
+  function esperaPin() {
+    try { return Math.max(0, Number(localStorage.getItem(CLAVE_PIN_ESPERA) || 0) - Date.now()); } catch (e) { return 0; }
+  }
+
+  function bloquearTeclado(bloquear) {
+    teclas.forEach(t => { t.disabled = bloquear; });
+  }
+
+  function revisarEspera() {
+    clearInterval(relojEspera);
+    const tic = () => {
+      const ms = esperaPin();
+      if (!ms) {
+        clearInterval(relojEspera);
+        bloquearTeclado(false);
+        if (msjPin.classList.contains("error")) escribir(msjPin, "");
+        return;
+      }
+      bloquearTeclado(true);
+      escribir(msjPin, `Demasiados intentos. Esperá ${Math.ceil(ms / 1000)} segundos.`, true);
+    };
+    tic();
+    relojEspera = setInterval(tic, 500);
+  }
+
+  function mostrarPin() {
+    pin = "";
+    revisando = false;
+    pintarPuntos();
+    escribir(msjPin, "");
+    mostrar("pin");
+    revisarEspera();
+    const primera = teclas.find(t => !t.disabled);
+    if (primera) primera.focus({ preventScroll: true });
+  }
+
+  async function huella(texto) {
+    const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
+    return [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function revisarPin() {
+    revisando = true;
+    let ok = false;
+    try { ok = (await huella("amigo-invisible|" + pin)) === HUELLA_PIN; } catch (e) { ok = false; }
+    if (ok) {
+      fallosPin = 0;
+      pintarPuntos("bien");
+      setTimeout(() => {
+        revisando = false;
+        escribir(msjLogin, "");
+        mostrar("login", usuario);
+      }, 350);
+      return;
+    }
+    fallosPin++;
+    pintarPuntos("mal");
+    escribir(msjPin, "Código incorrecto.", true);
+    if (fallosPin >= MAX_FALLOS_PIN) {
+      fallosPin = 0;
+      try { localStorage.setItem(CLAVE_PIN_ESPERA, String(Date.now() + 60000)); } catch (e) { /* ignorar */ }
+    }
+    setTimeout(() => {
+      pin = "";
+      revisando = false;
+      pintarPuntos();
+      revisarEspera();
+    }, 600);
+  }
+
+  function teclear(n) {
+    if (revisando || esperaPin()) return;
+    if (pin.length >= 4) return;
+    if (msjPin.classList.contains("error")) escribir(msjPin, "");
+    pin += n;
+    pintarPuntos();
+    if (pin.length === 4) revisarPin();
+  }
+  function borrar() {
+    if (revisando || !pin) return;
+    pin = pin.slice(0, -1);
+    pintarPuntos();
+  }
+
+  teclas.forEach(t => t.addEventListener("click", () => {
+    if (t.dataset.n !== undefined) teclear(t.dataset.n);
+    else borrar();
+  }));
+  // También se puede escribir con el teclado de la compu.
+  admin.addEventListener("keydown", e => {
+    if (vistas.pin.hidden) return;
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); teclear(e.key); }
+    else if (e.key === "Backspace") { e.preventDefault(); borrar(); }
+  });
 
   // ---------- Entrar ----------
   vistas.login.addEventListener("submit", async e => {
