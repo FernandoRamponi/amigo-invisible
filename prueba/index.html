@@ -229,16 +229,7 @@ h1 {
   border-radius: 18px;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
 }
-.confirmar-foto { width: 96px; height: 96px; border-width: 3px; margin: 0 auto 10px; display: block; }
-.confirmar-titulo { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--verde); }
-.confirmar-nombre {
-  margin: 4px 0 10px;
-  font-size: 2rem;
-  font-weight: 800;
-  color: color-mix(in srgb, var(--c) 75%, #000);
-}
-.confirmar-nombre .corazon { width: 28px; height: 25px; vertical-align: -2px; }
-.confirmar-texto { margin: 0 0 18px; font-size: 0.92rem; line-height: 1.4; color: var(--gris); }
+.confirmar-texto { margin: 4px 0 20px; font-size: 1.15rem; font-weight: 600; line-height: 1.45; color: var(--texto); }
 .confirmar-botones { display: flex; gap: 10px; }
 .confirmar-botones .btn { flex: 1; padding: 14px 10px; font-size: 1.05rem; }
 .confirmar-si { color: #fff; background: var(--verde); box-shadow: 0 4px 0 #10502b; }
@@ -1211,15 +1202,12 @@ body:has(.admin[open]) { overflow: hidden; }
   </main>
 
   <!-- Confirmación al elegir un nombre -->
-  <dialog id="confirmar" class="confirmar" aria-labelledby="confirmar-titulo">
+  <dialog id="confirmar" class="confirmar" aria-labelledby="confirmar-texto">
     <div class="confirmar-tarjeta">
-      <img id="confirmar-foto" class="avatar confirmar-foto" alt="" width="96" height="96">
-      <p id="confirmar-titulo" class="confirmar-titulo">¿Sos vos?</p>
-      <p id="confirmar-nombre" class="confirmar-nombre"></p>
-      <p class="confirmar-texto">Elegí solo tu nombre.</p>
+      <p id="confirmar-texto" class="confirmar-texto">¿Segura/o que es correcto el nombre que seleccionaste? Si es correcto confirmá, de lo contrario presioná cancelar.</p>
       <div class="confirmar-botones">
-        <button type="button" id="confirmar-no" class="btn confirmar-no">No, cambiar</button>
-        <button type="button" id="confirmar-si" class="btn confirmar-si">Sí, soy yo</button>
+        <button type="button" id="confirmar-no" class="btn confirmar-no">Cancelar</button>
+        <button type="button" id="confirmar-si" class="btn confirmar-si">Confirmar</button>
       </div>
     </div>
   </dialog>
@@ -1689,10 +1677,8 @@ function elegir(nombre, desdeLista = false) {
   cerrarLista(desdeLista);
 }
 
-// ---------- Confirmación: "¿Sos vos?" ----------
+// ---------- Confirmación al elegir un nombre ----------
 const confirmar = document.getElementById("confirmar");
-const confirmarFoto = document.getElementById("confirmar-foto");
-const confirmarNombre = document.getElementById("confirmar-nombre");
 let nombrePendiente = "";
 
 function pedirConfirmacion(nombre) {
@@ -1702,10 +1688,6 @@ function pedirConfirmacion(nombre) {
   }
   nombrePendiente = nombre;
   cerrarLista();
-  confirmar.style.setProperty("--c", colorDe(nombre));
-  confirmarFoto.src = fotoDe(nombre);
-  confirmarNombre.textContent = nombre;
-  decorarNombre(confirmar, nombre, confirmarNombre);
   confirmar.showModal();
   document.getElementById("confirmar-si").focus();
 }
