@@ -16,6 +16,10 @@ const PARTICIPANTES = [
 //    Si queda vacío, se usa el mail de la cuenta dueña de este script.
 const MAIL_ADMIN = "";
 
+// 3) A quién NO le puede tocar cada uno (aparte de sí mismo).
+//    Ejemplo: { "Ana": ["Bruno"], "Bruno": ["Ana"] } → Ana y Bruno nunca se regalan entre sí.
+const PROHIBIDOS = {};
+
 // El usuario y la contraseña de admin NO van acá: se crean (o se cambian) desde la web,
 // con un código que llega a MAIL_ADMIN. Se guardan cifrados en las propiedades del script.
 
@@ -114,6 +118,9 @@ function sortear_(nombre) {
       return { ok: true, yaSorteo: true };
     }
 
+    // Antes de mostrar el resultado, se asegura de que respete las reglas de PROHIBIDOS.
+    if (ajustarReglas_(asignaciones, sorteados)) guardar_("asignaciones", asignaciones);
+
     sorteados.push(nombre);
     guardar_("sorteados", sorteados);
 
@@ -140,16 +147,72 @@ function resultadoVigente_(nombre, id) {
   return actual === id;
 }
 
+// ¿A "de" le puede tocar "a"? Nunca uno mismo, ni nadie de su lista de PROHIBIDOS.
+function permitido_(de, a) {
+  return de !== a && (PROHIBIDOS[de] || []).indexOf(a) === -1;
+}
+
 // Mezcla los nombres y arma una ronda: cada uno le regala al siguiente.
-// Así nunca a nadie le toca su propio nombre y nadie se repite.
+// Así nunca a nadie le toca su propio nombre y nadie se repite. Respeta PROHIBIDOS.
 function generarAsignaciones_() {
   if (PARTICIPANTES.length < 2) throw new Error("Hacen falta al menos 2 participantes");
-  const s = mezclar_(PARTICIPANTES);
-  const asignaciones = {};
-  for (let i = 0; i < s.length; i++) {
-    asignaciones[s[i]] = s[(i + 1) % s.length];
+  for (let intento = 0; intento < 5000; intento++) {
+    const s = mezclar_(PARTICIPANTES);
+    const asignaciones = {};
+    let sirve = true;
+    for (let i = 0; i < s.length && sirve; i++) {
+      asignaciones[s[i]] = s[(i + 1) % s.length];
+      sirve = permitido_(s[i], asignaciones[s[i]]);
+    }
+    if (sirve) return asignaciones;
   }
+  // Si con una sola ronda no se puede, cualquier reparto que respete las reglas.
+  const m = repartir_(PARTICIPANTES, PARTICIPANTES);
+  if (!m) throw new Error("Con esas reglas de PROHIBIDOS no se puede armar el sorteo");
+  const asignaciones = {};
+  PARTICIPANTES.forEach(function (n, i) { asignaciones[n] = m[i]; });
   return asignaciones;
+}
+
+// Reparte "destinos" entre "libres" al azar respetando las reglas
+// (y "condicion", si se pasa). Devuelve el reparto o null si no se encontró.
+function repartir_(libres, destinos, condicion) {
+  for (let intento = 0; intento < 3000; intento++) {
+    const m = mezclar_(destinos);
+    const sirve = libres.every(function (n, i) { return permitido_(n, m[i]); }) &&
+      (!condicion || condicion(m));
+    if (sirve) return m;
+  }
+  return null;
+}
+
+// Los que todavía no sortearon (a ellos se les puede cambiar a quién le toca sin que nadie note).
+function libres_(asignaciones, sorteados) {
+  return PARTICIPANTES.filter(function (n) {
+    return asignaciones[n] && sorteados.indexOf(n) === -1;
+  });
+}
+
+// Si a alguien que todavía no sorteó le tocó alguien prohibido (por ejemplo porque las
+// reglas se agregaron después de armar el sorteo), vuelve a mezclar entre los que no
+// sortearon para corregirlo. Devuelve true si cambió algo.
+function ajustarReglas_(asignaciones, sorteados) {
+  const libres = libres_(asignaciones, sorteados);
+  const malos = libres.some(function (n) { return !permitido_(n, asignaciones[n]); });
+  if (!malos) return false;
+  const m = repartir_(libres, libres.map(function (n) { return asignaciones[n]; }));
+  if (!m) return false;
+  libres.forEach(function (n, i) { asignaciones[n] = m[i]; });
+  return true;
+}
+
+// Los que ya sortearon y les tocó alguien prohibido: solo se arregla reseteándolos.
+function conflictos_(asignaciones, sorteados) {
+  return PARTICIPANTES.filter(function (n) {
+    return asignaciones[n] && !permitido_(n, asignaciones[n]);
+  }).map(function (n) {
+    return { de: n, a: asignaciones[n], sorteo: sorteados.indexOf(n) !== -1 };
+  });
 }
 
 // Devuelve una copia mezclada al azar.
@@ -302,11 +365,14 @@ function adminEstado_() {
       guardar_("asignaciones", asignaciones);
       guardar_("sorteados", []);
     }
+    const sorteados = leer_("sorteados", []);
+    if (ajustarReglas_(asignaciones, sorteados)) guardar_("asignaciones", asignaciones);
     return {
       ok: true,
       participantes: PARTICIPANTES,
-      sorteados: leer_("sorteados", []),
+      sorteados: sorteados,
       asignaciones: asignaciones,
+      conflictos: conflictos_(asignaciones, sorteados),
     };
   } finally {
     lock.releaseLock();
@@ -333,23 +399,18 @@ function adminResetear_(nombre) {
     delete ids[nombre];
 
     // Volvemos a mezclar a quién le toca entre él y los que todavía no sortearon
-    // (los que ya vieron su resultado no se tocan). A nadie le puede tocar él mismo.
-    const libres = PARTICIPANTES.filter(function (n) {
-      return asignaciones[n] && sorteados.indexOf(n) === -1;
-    });
+    // (los que ya vieron su resultado no se tocan), respetando las reglas.
+    const libres = libres_(asignaciones, sorteados);
     const destinos = libres.map(function (n) { return asignaciones[n]; });
     const yo = libres.indexOf(nombre);
-    let cambio = false;
-    for (let intento = 0; intento < 500 && !cambio; intento++) {
-      const m = mezclar_(destinos);
-      const sirve = m[yo] !== asignaciones[nombre] &&
-        libres.every(function (n, i) { return m[i] !== n; });
-      if (sirve) {
-        libres.forEach(function (n, i) { asignaciones[n] = m[i]; });
-        cambio = true;
-      }
+    const antes = asignaciones[nombre];
+    let m = repartir_(libres, destinos, function (x) { return x[yo] !== antes; });
+    if (!m && !permitido_(nombre, antes)) m = repartir_(libres, destinos); // al menos que cumpla las reglas
+    if (m) {
+      libres.forEach(function (n, i) { asignaciones[n] = m[i]; });
+      guardar_("asignaciones", asignaciones);
     }
-    if (cambio) guardar_("asignaciones", asignaciones);
+    const cambio = asignaciones[nombre] !== antes;
 
     guardar_("sorteados", sorteados);
     guardar_("idsSorteo", ids);

@@ -464,6 +464,11 @@
     btnVer.replaceChildren(icono(verResultados ? "eye-off" : "eye"), t);
     btnVer.setAttribute("aria-pressed", String(verResultados));
 
+    // Si a alguien le tocó una persona que no puede tocarle (regla del Apps Script) y ya lo vio.
+    $("admin-alerta").textContent = (estado.conflictos || []).map(c => c.sorteo
+      ? `⚠ ${c.de} ya sorteó y le tocó ${c.a}, que no está permitido. Tocá «Resetear» en ${c.de} para cambiarlo.`
+      : `⚠ A ${c.de} le toca ${c.a}, que no está permitido, y no se pudo corregir solo.`).join(" ");
+
     lista.classList.toggle("animar", animar);
     lista.innerHTML = "";
     nombres.forEach((n, i) => {

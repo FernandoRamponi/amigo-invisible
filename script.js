@@ -29,11 +29,12 @@ const COLORES_NOMBRES = [
   "#ff4d6d", "#ffc93c", "#3ddc84", "#4fd1ff", "#b388ff", "#ff8a3d",
   "#ff6fb5", "#7cf5e0", "#c6ff4d", "#6e8bff", "#ff5ce1", "#ffe066",
 ];
-// Algunos tienen su estilo propio: Juani rosa con un corazón pixelado,
-// Daniela y Ezequiel con colores oscuros y sin brillo ("mate").
+// Algunos tienen su estilo propio: Fernando azul, Juani rosa con un corazón pixelado,
+// Daniela (gris) y Ezequiel con colores oscuros y sin brillo ("mate").
 const ESTILOS_NOMBRES = {
+  Fernando: { color: "#1e6bff" },
   Juani: { color: "#ff4fa3", corazon: true },
-  Daniela: { color: "#5a2d45", mate: true },
+  Daniela: { color: "#4b4b50", mate: true },
   Ezequiel: { color: "#2f4054", mate: true },
 };
 function estiloDe(nombre) {
