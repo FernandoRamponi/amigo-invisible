@@ -231,12 +231,12 @@ h1 {
 }
 .confirmar-foto { width: 96px; height: 96px; border-width: 3px; margin: 0 auto 8px; display: block; }
 .confirmar-nombre {
-  margin: 0 0 10px;
-  font-size: 2rem;
+  font-size: 1.35rem;
   font-weight: 800;
+  white-space: nowrap;
   color: color-mix(in srgb, var(--c) 75%, #000);
 }
-.confirmar-nombre .corazon { width: 28px; height: 25px; vertical-align: -2px; }
+.confirmar-nombre .corazon { width: 20px; height: 18px; margin-left: 4px; vertical-align: -1px; }
 .confirmar-texto { margin: 4px 0 20px; font-size: 1.15rem; font-weight: 600; line-height: 1.45; color: var(--texto); }
 .confirmar-botones { display: flex; gap: 10px; }
 .confirmar-botones .btn { flex: 1; padding: 14px 10px; font-size: 1.05rem; }
@@ -1213,8 +1213,7 @@ body:has(.admin[open]) { overflow: hidden; }
   <dialog id="confirmar" class="confirmar" aria-labelledby="confirmar-texto">
     <div class="confirmar-tarjeta">
       <img id="confirmar-foto" class="avatar confirmar-foto" alt="" width="96" height="96">
-      <p id="confirmar-nombre" class="confirmar-nombre"></p>
-      <p id="confirmar-texto" class="confirmar-texto">¿Segura/o que es correcto el nombre que seleccionaste? Si es correcto confirmá, de lo contrario presioná cancelar.</p>
+      <p id="confirmar-texto" class="confirmar-texto">Seleccionaste <span id="confirmar-nombre" class="confirmar-nombre"></span>, ¿es correcto?</p>
       <div class="confirmar-botones">
         <button type="button" id="confirmar-no" class="btn confirmar-no">Cancelar</button>
         <button type="button" id="confirmar-si" class="btn confirmar-si">Confirmar</button>
