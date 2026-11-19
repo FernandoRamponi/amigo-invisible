@@ -499,6 +499,13 @@ h1 {
 .admin-msj.error { color: var(--rojo); }
 
 /* Panel */
+.admin-panel > .admin-msj:not(:empty) {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: rgba(30, 122, 70, 0.1);
+  border-radius: 10px;
+}
+.admin-panel > .admin-msj.error:not(:empty) { background: rgba(200, 16, 46, 0.1); }
 .admin-resumen { margin: 0 0 8px; font-size: 1.05rem; font-weight: 700; }
 .admin-progreso {
   height: 10px;
@@ -715,6 +722,7 @@ h1 {
 
       <!-- 3. Código + usuario y contraseña nuevos -->
       <form id="admin-codigo" class="admin-form" novalidate hidden>
+        <p id="admin-enviado" class="admin-texto"></p>
         <p id="admin-cuenta" class="admin-cuenta" aria-live="polite"></p>
         <label for="admin-codigo-input">Código del mail</label>
         <input id="admin-codigo-input" class="admin-codigo-input" type="text" inputmode="numeric"
@@ -736,8 +744,8 @@ h1 {
         <p id="admin-resumen" class="admin-resumen"></p>
         <div class="admin-progreso" aria-hidden="true"><span id="admin-barra"></span></div>
         <button type="button" id="admin-ver" class="btn btn-claro" aria-pressed="false"></button>
-        <ul id="admin-lista" class="admin-lista"></ul>
         <p id="admin-msj" class="admin-msj" role="status"></p>
+        <ul id="admin-lista" class="admin-lista"></ul>
         <div class="admin-pie">
           <button type="button" id="admin-actualizar" class="admin-link">↻ Actualizar</button>
           <button type="button" id="admin-salir" class="admin-link">Salir del admin</button>
@@ -1156,6 +1164,7 @@ iniciar();
   const btnMandar = $("admin-mail-enviar");
   const msjMail = $("admin-mail-msj");
   // Código + contraseña nueva
+  const enviado = $("admin-enviado");
   const cuenta = $("admin-cuenta");
   const codigo = $("admin-codigo-input");
   const nuevoUsuario = $("admin-nuevo-usuario");
@@ -1300,9 +1309,10 @@ iniciar();
     if (!res) return;
     codigo.value = "";
     mostrar("codigo", codigo);
-    escribir(msjCodigo, res.codigoDemo
+    enviado.textContent = res.codigoDemo
       ? `Modo prueba: no se manda mail, el código es ${res.codigoDemo}`
-      : "Revisá tu Gmail (si no está, fijate en Spam).");
+      : "📧 Te mandé un código de 6 números a tu Gmail. Si no lo ves, fijate en Spam.";
+    escribir(msjCodigo, "");
     arrancarReloj();
   });
 
@@ -1311,9 +1321,10 @@ iniciar();
     if (!res) return;
     codigo.value = "";
     codigo.focus();
-    escribir(msjCodigo, res.codigoDemo
+    enviado.textContent = res.codigoDemo
       ? `Modo prueba: el código nuevo es ${res.codigoDemo}`
-      : "Te mandé un código nuevo. Usá el último que te llegó.");
+      : "📧 Te mandé un código nuevo. Usá el último que te llegó.";
+    escribir(msjCodigo, "");
     arrancarReloj();
   });
 
