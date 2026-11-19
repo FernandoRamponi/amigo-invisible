@@ -236,6 +236,7 @@ h1 {
   white-space: nowrap;
   color: color-mix(in srgb, var(--c) 75%, #000);
 }
+.confirmar-texto .sin-corte { white-space: nowrap; }
 .confirmar-nombre .corazon { width: 20px; height: 18px; margin-left: 4px; vertical-align: -1px; }
 .confirmar-texto { margin: 4px 0 20px; font-size: 1.15rem; font-weight: 600; line-height: 1.45; color: var(--texto); }
 .confirmar-botones { display: flex; gap: 10px; }
@@ -1213,7 +1214,7 @@ body:has(.admin[open]) { overflow: hidden; }
   <dialog id="confirmar" class="confirmar" aria-labelledby="confirmar-texto">
     <div class="confirmar-tarjeta">
       <img id="confirmar-foto" class="avatar confirmar-foto" alt="" width="96" height="96">
-      <p id="confirmar-texto" class="confirmar-texto">Seleccionaste <span id="confirmar-nombre" class="confirmar-nombre"></span>, ¿es correcto?</p>
+      <p id="confirmar-texto" class="confirmar-texto">Seleccionaste <span id="confirmar-nombre" class="confirmar-nombre"></span>, <span class="sin-corte">¿es correcto?</span></p>
       <div class="confirmar-botones">
         <button type="button" id="confirmar-no" class="btn confirmar-no">Cancelar</button>
         <button type="button" id="confirmar-si" class="btn confirmar-si">Confirmar</button>
