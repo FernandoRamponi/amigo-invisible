@@ -10,6 +10,37 @@
   <!-- Fondo: copos de nieve -->
   <div id="fondo" aria-hidden="true"></div>
 
+  <!-- Íconos (estilo lineal) que usa la parte de admin -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-3.6 8-10V5.2L12 2 4 5.2V12c0 6.4 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="11" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="5"/><path d="m11.6 11.4 9.4-9.4"/><path d="m16.5 6.5 3 3"/><path d="m14 9 2 2"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="m3 7 9 6 9-6"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M21.5 2.5 10.5 13.5"/><path d="m21.5 2.5-7 19-4-8-8-4Z"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.7 5.1A9.6 9.6 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-2.2 3.1"/><path d="M6.6 6.6C4 8.3 2.5 12 2.5 12S6 19 12 19a9 9 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9L3.5 15.5"/><path d="M3.5 20v-4.5H8"/><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9l2.4 2.4"/><path d="M20.5 4v4.5H16"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6L3.5 8.5"/><path d="M3.5 3.5v5h5"/></symbol>
+    <symbol id="i-log-out" viewBox="0 0 24 24"><path d="M9 21H5.5A2.5 2.5 0 0 1 3 18.5v-13A2.5 2.5 0 0 1 5.5 3H9"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4.5" rx="1.2"/><path d="M12 8v13"/><path d="M19.5 12.5V19a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-6.5"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10.5 3 12 8 12 8s1.5-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4 2.4 17.5a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></symbol>
+  </svg>
+
+  <!-- Botón para entrar como admin (arriba a la derecha) -->
+  <button type="button" id="btn-admin" class="btn-admin luz" aria-label="Entrar como admin">
+    <svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>
+    <span>Admin</span>
+  </button>
+
   <main class="contenedor">
     <h1>🎁 Amigo Invisible 🎁</h1>
 
@@ -87,11 +118,169 @@
     </div>
 
     <p id="aviso-demo" class="aviso-demo oculto">
-      Modo prueba: todavía no está conectado el Apps Script (ver INSTRUCCIONES.md).
+      Modo prueba: nombres de ejemplo, no se manda ningún mail y nada de esto toca el sorteo real.
     </p>
   </main>
 
+  <!-- Ventana de admin: entrar, crear/cambiar contraseña con código por mail, y panel -->
+  <dialog id="admin" class="admin" aria-labelledby="admin-titulo">
+    <div class="admin-fondo" aria-hidden="true"></div>
+    <div class="admin-interior">
+      <header class="admin-barra">
+        <div class="admin-marca">
+          <span class="admin-marca-ico"><svg class="ico" aria-hidden="true"><use id="admin-marca-uso" href="#i-shield"/></svg></span>
+          <div>
+            <p class="admin-sobre">Amigo Invisible</p>
+            <h2 id="admin-titulo">Entrar como admin</h2>
+          </div>
+        </div>
+        <button type="button" id="admin-cerrar" class="admin-icono-btn luz" aria-label="Cerrar">
+          <svg class="ico" aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+      </header>
+
+      <p id="admin-ayuda-demo" class="admin-aviso" hidden>
+        <svg class="ico" aria-hidden="true"><use href="#i-info"/></svg>
+        <span>Modo prueba: sirve cualquier usuario y contraseña, y el código te lo muestro acá en vez de mandarlo por mail.</span>
+      </p>
+
+      <!-- 1. Entrar -->
+      <form id="admin-login" class="admin-vista admin-tarjeta" novalidate>
+        <div class="admin-avatar"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg></div>
+        <p class="admin-bajada">Solo el organizador puede entrar acá.</p>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Usuario</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-user"/></svg>
+            <input id="admin-usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Contraseña</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
+            <input id="admin-clave" type="password" autocomplete="current-password">
+          </span>
+        </label>
+        <button id="admin-entrar" class="admin-btn admin-btn-primario luz" type="submit">
+          <span>Entrar</span>
+          <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+        </button>
+        <p id="admin-login-msj" class="admin-msj" role="status"></p>
+        <button type="button" id="admin-ir-recuperar" class="admin-btn admin-btn-texto luz">
+          <svg class="ico" aria-hidden="true"><use href="#i-key"/></svg>
+          <span>¿Primera vez o te olvidaste la contraseña?</span>
+        </button>
+      </form>
+
+      <!-- 2. Pedir el código al Gmail -->
+      <form id="admin-mail" class="admin-vista admin-tarjeta" novalidate hidden>
+        <div class="admin-avatar"><svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg></div>
+        <p class="admin-bajada">
+          Escribí tu Gmail y te mando un código para crear o cambiar tu usuario y contraseña.
+          El código vence en 2 minutos.
+        </p>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Tu Gmail</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg>
+            <input id="admin-mail-input" type="email" autocomplete="email" autocapitalize="none" spellcheck="false">
+          </span>
+        </label>
+        <button id="admin-mail-enviar" class="admin-btn admin-btn-primario luz" type="submit">
+          <svg class="ico" aria-hidden="true"><use href="#i-send"/></svg>
+          <span>Mandarme el código</span>
+        </button>
+        <p id="admin-mail-msj" class="admin-msj" role="status"></p>
+        <button type="button" class="admin-btn admin-btn-texto luz admin-volver">
+          <svg class="ico" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+          <span>Volver</span>
+        </button>
+      </form>
+
+      <!-- 3. Código + usuario y contraseña nuevos -->
+      <form id="admin-codigo" class="admin-vista admin-tarjeta" novalidate hidden>
+        <div id="admin-reloj" class="admin-reloj" aria-hidden="true">
+          <svg viewBox="0 0 120 120"><circle class="anillo-fondo" cx="60" cy="60" r="52"/><circle id="admin-reloj-arco" class="anillo-arco" cx="60" cy="60" r="52"/></svg>
+          <div class="admin-reloj-centro"><strong id="admin-reloj-texto">2:00</strong><span>vence en</span></div>
+        </div>
+        <p id="admin-enviado" class="admin-bajada"></p>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Código del mail</span>
+          <span class="admin-input admin-input-codigo">
+            <input id="admin-codigo-input" type="text" inputmode="numeric" autocomplete="one-time-code"
+                   maxlength="6" placeholder="······">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Usuario</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-user"/></svg>
+            <input id="admin-nuevo-usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Contraseña nueva</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
+            <input id="admin-nueva-clave" type="password" autocomplete="new-password" placeholder="Al menos 6 caracteres">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Repetí la contraseña</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
+            <input id="admin-nueva-clave2" type="password" autocomplete="new-password">
+          </span>
+        </label>
+        <button id="admin-guardar" class="admin-btn admin-btn-primario luz" type="submit">
+          <svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg>
+          <span>Guardar y entrar</span>
+        </button>
+        <p id="admin-codigo-msj" class="admin-msj" role="status"></p>
+        <div class="admin-fila-botones">
+          <button type="button" id="admin-reenviar" class="admin-btn admin-btn-texto luz">
+            <svg class="ico" aria-hidden="true"><use href="#i-send"/></svg>
+            <span>Mandarme otro código</span>
+          </button>
+          <button type="button" class="admin-btn admin-btn-texto luz admin-volver">
+            <svg class="ico" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+            <span>Volver</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- 4. Panel -->
+      <div id="admin-panel" class="admin-vista" hidden>
+        <section class="admin-tarjeta admin-stats">
+          <div class="admin-anillo" aria-hidden="true">
+            <svg viewBox="0 0 120 120"><circle class="anillo-fondo" cx="60" cy="60" r="52"/><circle id="admin-anillo-arco" class="anillo-arco" cx="60" cy="60" r="52"/></svg>
+            <div class="admin-reloj-centro"><strong id="admin-cuantos">0</strong><span id="admin-total">de 0</span></div>
+          </div>
+          <div class="admin-stats-texto">
+            <p class="admin-sobre">Progreso del sorteo</p>
+            <p id="admin-resumen" class="admin-resumen">Cargando...</p>
+            <p id="admin-faltan" class="admin-faltan"></p>
+          </div>
+        </section>
+        <div class="admin-acciones">
+          <button type="button" id="admin-ver" class="admin-btn admin-btn-secundario luz" aria-pressed="false"></button>
+          <button type="button" id="admin-actualizar" class="admin-icono-btn admin-icono-grande luz" aria-label="Actualizar">
+            <svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg>
+          </button>
+        </div>
+        <p id="admin-msj" class="admin-msj admin-toast" role="status"></p>
+        <ul id="admin-lista" class="admin-lista"></ul>
+        <button type="button" id="admin-salir" class="admin-btn admin-btn-texto luz">
+          <svg class="ico" aria-hidden="true"><use href="#i-log-out"/></svg>
+          <span>Cerrar sesión de admin</span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+
   <script src="script.js"></script>
+  <script src="admin.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="santa3d.js"></script>
 </body>

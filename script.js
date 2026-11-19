@@ -6,7 +6,8 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxeGtcRlm8WPQCbqw1mYEK8cLOCMe36-Qww95kYKDSoN6x2r-A4gX0jwwzaoEoz9OnoKg/exec";
 
 const MODO_DEMO = !SCRIPT_URL;
-const CLAVE_RESULTADO = "amigo-invisible-resultado";
+// En modo prueba se guarda aparte, así probar no pisa el resultado real del mismo celular.
+const CLAVE_RESULTADO = MODO_DEMO ? "amigo-invisible-demo-resultado" : "amigo-invisible-resultado";
 
 // ---------- Elementos ----------
 const selector = document.getElementById("selector");
@@ -41,30 +42,57 @@ function fotoDe(nombre) {
 }
 
 // ---------- Comunicación con el Apps Script ----------
-async function api(params) {
+// Lo público va por GET; lo del admin va por POST (así la contraseña no viaja en la dirección).
+async function api(params, porPost = false) {
   if (MODO_DEMO) return apiDemo(params);
-  const url = SCRIPT_URL + "?" + new URLSearchParams(params);
-  const resp = await fetch(url);
+  const resp = porPost
+    ? await fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(params),
+      })
+    : await fetch(SCRIPT_URL + "?" + new URLSearchParams(params));
   if (!resp.ok) throw new Error("El servidor respondió " + resp.status);
   return resp.json();
 }
 
-// Simulación local para probar sin Apps Script
-const demo = { nombres: ["Ana", "Bruno", "Carla", "Diego", "Euge"], asignaciones: null, sorteados: [] };
+// Simulación para probar sin Apps Script (queda guardada en este navegador).
+const CLAVE_DEMO = "amigo-invisible-demo-datos";
+const demo = (() => {
+  const base = { nombres: ["Ana", "Bruno", "Carla", "Diego", "Euge"], asignaciones: null, sorteados: [], ids: {} };
+  if (!MODO_DEMO) return base;
+  try { return Object.assign(base, JSON.parse(localStorage.getItem(CLAVE_DEMO)) || {}); } catch (e) { return base; }
+})();
+function guardarDemo() {
+  try { localStorage.setItem(CLAVE_DEMO, JSON.stringify(demo)); } catch (e) { /* ignorar */ }
+}
+function demoAsignaciones() {
+  if (!demo.asignaciones) {
+    const s = [...demo.nombres].sort(() => Math.random() - 0.5);
+    demo.asignaciones = {};
+    s.forEach((n, i) => { demo.asignaciones[n] = s[(i + 1) % s.length]; });
+    demo.sorteados = [];
+  }
+  return demo.asignaciones;
+}
 async function apiDemo(params) {
   await new Promise(r => setTimeout(r, 800));
-  if (params.accion === "participantes") return { ok: true, participantes: demo.nombres };
-  if (params.accion === "sortear") {
-    if (!demo.asignaciones) {
-      const s = [...demo.nombres].sort(() => Math.random() - 0.5);
-      demo.asignaciones = {};
-      s.forEach((n, i) => { demo.asignaciones[n] = s[(i + 1) % s.length]; });
-    }
-    if (demo.sorteados.includes(params.nombre)) return { ok: true, yaSorteo: true };
-    demo.sorteados.push(params.nombre);
-    console.log(`[demo] Mail al organizador: "${params.nombre} ya hizo su sorteo (${demo.sorteados.length} de ${demo.nombres.length})"`);
-    return { ok: true, yaSorteo: false, teToca: demo.asignaciones[params.nombre] };
+  const n = params.nombre;
+  if (params.accion === "participantes") {
+    const res = { ok: true, participantes: demo.nombres };
+    if (n) res.vigente = demo.sorteados.includes(n) && (!demo.ids[n] || demo.ids[n] === params.id);
+    return res;
   }
+  if (params.accion === "sortear") {
+    const asig = demoAsignaciones();
+    if (demo.sorteados.includes(n)) return { ok: true, yaSorteo: true };
+    demo.sorteados.push(n);
+    demo.ids[n] = String(Math.random()).slice(2);
+    guardarDemo();
+    console.log(`[demo] Mail al organizador: "${n} ya hizo su sorteo (${demo.sorteados.length} de ${demo.nombres.length})"`);
+    return { ok: true, yaSorteo: false, teToca: asig[n], id: demo.ids[n] };
+  }
+  if (String(params.accion).startsWith("admin")) return adminDemo(params); // está en admin.js
   return { ok: false, error: "Acción desconocida" };
 }
 
@@ -72,8 +100,11 @@ async function apiDemo(params) {
 function leerResultado() {
   try { return JSON.parse(localStorage.getItem(CLAVE_RESULTADO)); } catch (e) { return null; }
 }
-function guardarResultado(nombre, teToca) {
-  try { localStorage.setItem(CLAVE_RESULTADO, JSON.stringify({ nombre, teToca })); } catch (e) { /* ignorar */ }
+function guardarResultado(nombre, teToca, id) {
+  try { localStorage.setItem(CLAVE_RESULTADO, JSON.stringify({ nombre, teToca, id })); } catch (e) { /* ignorar */ }
+}
+function borrarResultado() {
+  try { localStorage.removeItem(CLAVE_RESULTADO); } catch (e) { /* ignorar */ }
 }
 
 // ---------- UI ----------
@@ -256,7 +287,7 @@ async function sortear() {
     }
 
     await giro.parar(res.teToca);
-    guardarResultado(quien, res.teToca);
+    guardarResultado(quien, res.teToca, res.id);
     mostrarMensaje(`¡${quien}, te toca regalarle a ${res.teToca}! 🤫 No le digas a nadie.`);
     lanzarConfeti();
   } catch (err) {
@@ -302,12 +333,23 @@ async function iniciar() {
   avisoDemo.classList.toggle("oculto", !MODO_DEMO);
 
   // Si este dispositivo ya sorteó, mostrar el resultado directamente
-  const previo = leerResultado();
+  // (salvo que el admin lo haya reseteado: eso lo responde el Apps Script).
+  let previo = leerResultado();
+  const pedido = { accion: "participantes" };
+  if (previo && previo.nombre) {
+    pedido.nombre = previo.nombre;
+    pedido.id = previo.id || "";
+  }
 
   try {
-    const res = await api({ accion: "participantes" });
+    const res = await api(pedido);
     if (!res.ok) throw new Error(res.error);
     participantes = res.participantes;
+    if (previo && res.vigente === false && participantes.includes(previo.nombre)) {
+      borrarResultado();
+      mostrarMensaje(`El organizador reseteó el sorteo de ${previo.nombre}. Elegí tu nombre y sorteá 🎲`);
+      previo = null;
+    }
   } catch (err) {
     selectorTexto.textContent = "No se pudo cargar";
     mostrarMensaje("No se pudo conectar con el sorteo. Recargá la página.", true);
