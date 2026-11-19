@@ -1189,7 +1189,8 @@ iniciar();
     resbala: 5.9, cae: 6.3, golpe: 6.75, rearma: 8.3, festeja: 9.5, baile: 10.0, fin: 21.25,   // el baile dura 11,25 s
   };
   const CICLO = T.fin;
-  let inicio = 0;
+  // Con "?baile" en la dirección arranca directo bailando (para probar el baile)
+  let inicio = /[?&]baile\b/.test(location.search) ? -T.baile : 0;
 
   // Tocalo: si está mirando la tarjeta, salta ya
   contenedor.addEventListener("click", () => {
