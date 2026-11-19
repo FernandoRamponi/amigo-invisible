@@ -248,6 +248,7 @@ function opciones() {
 
 function abrirLista() {
   if (selectorBoton.disabled) return;
+  selector.classList.add("tocado"); // apaga el LED verde: ya tocó el botón
   selectorLista.hidden = false;
   selector.classList.add("abierto");
   selectorBoton.setAttribute("aria-expanded", "true");
@@ -275,6 +276,7 @@ function elegir(nombre, desdeLista = false) {
   selectorBoton.classList.add("elegido");
   decorarNombre(selectorBoton, nombre, selectorTexto);
   opciones().forEach(op => op.setAttribute("aria-selected", String(op.dataset.nombre === nombre)));
+  btnSortear.disabled = false; // Sortear se habilita recién con un nombre elegido
   if (mensaje.classList.contains("error")) mostrarMensaje("");
   cerrarLista(desdeLista);
 }
@@ -441,7 +443,7 @@ async function iniciar() {
   }
 
   selectorBoton.disabled = false;
-  btnSortear.disabled = false;
+  btnSortear.disabled = !quienElegido; // queda apagado hasta que elija su nombre
 }
 
 btnSortear.addEventListener("click", sortear);
