@@ -143,6 +143,7 @@ h1 {
   transition: opacity 0.3s;
   animation: led-gira 2.4s linear infinite;
 }
+.selector.tocado::before,
 .selector:has(.selector-boton:disabled)::before { opacity: 0; }
 
 .selector-texto { flex: 1; }
@@ -1680,6 +1681,7 @@ function opciones() {
 
 function abrirLista() {
   if (selectorBoton.disabled) return;
+  selector.classList.add("tocado"); // apaga el LED verde: ya tocó el botón
   selectorLista.hidden = false;
   selector.classList.add("abierto");
   selectorBoton.setAttribute("aria-expanded", "true");
