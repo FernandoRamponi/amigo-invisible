@@ -219,6 +219,15 @@ h1 {
   border-radius: 18px;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
 }
+.confirmar-foto { width: 96px; height: 96px; border-width: 3px; margin: 0 auto 8px; display: block; }
+.confirmar-nombre {
+  font-size: 1.35rem;
+  font-weight: 800;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--c) 75%, #000);
+}
+.confirmar-texto .sin-corte { white-space: nowrap; }
+.confirmar-nombre .corazon { width: 20px; height: 18px; margin-left: 4px; vertical-align: -1px; }
 .confirmar-texto { margin: 4px 0 20px; font-size: 1.15rem; font-weight: 600; line-height: 1.45; color: var(--texto); }
 .confirmar-botones { display: flex; gap: 10px; }
 .confirmar-botones .btn { flex: 1; padding: 14px 10px; font-size: 1.05rem; }

@@ -281,6 +281,8 @@ function elegir(nombre, desdeLista = false) {
 
 // ---------- Confirmación al elegir un nombre ----------
 const confirmar = document.getElementById("confirmar");
+const confirmarFoto = document.getElementById("confirmar-foto");
+const confirmarNombre = document.getElementById("confirmar-nombre");
 let nombrePendiente = "";
 
 function pedirConfirmacion(nombre) {
@@ -290,6 +292,10 @@ function pedirConfirmacion(nombre) {
   }
   nombrePendiente = nombre;
   cerrarLista();
+  confirmar.style.setProperty("--c", colorDe(nombre));
+  confirmarFoto.src = fotoDe(nombre);
+  confirmarNombre.textContent = nombre;
+  decorarNombre(confirmar, nombre, confirmarNombre);
   confirmar.showModal();
   document.getElementById("confirmar-si").focus();
 }

@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="img/regalo.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=202611191342">
+  <link rel="stylesheet" href="style.css?v=202611191750">
 </head>
 <body>
   <!-- Fondo: copos de nieve -->
@@ -150,7 +150,8 @@
   <!-- Confirmación al elegir un nombre -->
   <dialog id="confirmar" class="confirmar" aria-labelledby="confirmar-texto">
     <div class="confirmar-tarjeta">
-      <p id="confirmar-texto" class="confirmar-texto">¿Segura/o que es correcto el nombre que seleccionaste? Si es correcto confirmá, de lo contrario presioná cancelar.</p>
+      <img id="confirmar-foto" class="avatar confirmar-foto" alt="" width="96" height="96">
+      <p id="confirmar-texto" class="confirmar-texto">Seleccionaste <span id="confirmar-nombre" class="confirmar-nombre"></span>, <span class="sin-corte">¿es correcto?</span></p>
       <div class="confirmar-botones">
         <button type="button" id="confirmar-no" class="btn confirmar-no">Cancelar</button>
         <button type="button" id="confirmar-si" class="btn confirmar-si">Confirmar</button>
@@ -342,9 +343,9 @@
     </div>
   </dialog>
 
-  <script src="script.js?v=202611191342"></script>
-  <script src="admin.js?v=202611191342"></script>
+  <script src="script.js?v=202611191750"></script>
+  <script src="admin.js?v=202611191750"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="santa3d.js?v=202611191342"></script>
+  <script src="santa3d.js?v=202611191750"></script>
 </body>
 </html>
