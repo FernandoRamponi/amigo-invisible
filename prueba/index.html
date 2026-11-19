@@ -1,0 +1,3280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amigo Invisible (prueba)</title>
+  <meta name="robots" content="noindex">
+  <style>:root {
+  --rojo: #c8102e;
+  --rojo-oscuro: #8b0a1f;
+  --verde: #1e7a46;
+  --dorado: #f4c542;
+  --crema: #fff8ec;
+  --texto: #2b1d14;
+  --gris: #7a6a58;
+  --fondo-1: #0f2a1d;
+  --fondo-2: #071510;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: var(--texto);
+  background: radial-gradient(circle at top, var(--fondo-1), var(--fondo-2));
+  overflow-x: hidden;
+}
+
+/* Capa de fondo (copos de nieve por ahora; después el Santa) */
+#fondo {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.copo {
+  position: absolute;
+  top: -20px;
+  color: #fff;
+  opacity: 0.8;
+  animation: caer linear infinite;
+}
+@keyframes caer {
+  to { transform: translateY(110vh) rotate(360deg); }
+}
+
+.contenedor {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+h1 {
+  text-align: center;
+  color: #fff;
+  font-size: 2.2rem;
+  text-shadow: 0 3px 0 var(--rojo-oscuro), 0 0 18px rgba(244, 197, 66, 0.5);
+  margin: 8px 0 24px;
+}
+
+.tarjeta {
+  background: var(--crema);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border: 3px solid var(--dorado);
+}
+
+.oculto { display: none; }
+
+/* ¿Quién sos? */
+.etiqueta {
+  display: block;
+  font-weight: 700;
+  color: var(--verde);
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+}
+/* Menú de nombres */
+.selector {
+  position: relative;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.selector-boton {
+  --c: var(--verde);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--texto);
+  background: #fff;
+  border: 2px solid var(--c);
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--c) 45%, #000), 0 0 0 0 transparent;
+  transition: box-shadow 0.25s, transform 0.1s, border-color 0.25s;
+}
+.selector-boton:hover:not(:disabled),
+.selector-boton:focus-visible {
+  outline: none;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--c) 45%, #000), 0 0 18px 2px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.selector-boton:active:not(:disabled) { transform: translateY(2px); }
+.selector-boton:disabled { cursor: wait; opacity: 0.75; }
+.selector-boton.elegido { background: color-mix(in srgb, var(--c) 10%, #fff); }
+
+.selector-texto { flex: 1; }
+.selector-flecha {
+  font-size: 1.3rem;
+  color: var(--c);
+  transition: transform 0.25s;
+}
+.selector.abierto .selector-flecha { transform: rotate(180deg); }
+
+.selector-lista {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  max-height: min(60vh, 470px);
+  overflow-y: auto;
+  background: #1a0f0a;
+  border: 2px solid var(--dorado);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 24px rgba(244, 197, 66, 0.25);
+  animation: lista-abrir 0.22s ease-out;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dorado) transparent;
+}
+.selector-lista[hidden] { display: none; }
+@keyframes lista-abrir {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+}
+
+.opcion {
+  --c: #fff;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: left;
+  color: #fff;
+  background: color-mix(in srgb, var(--c) 14%, #1a0f0a);
+  border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
+  border-radius: 12px;
+  cursor: pointer;
+  opacity: 0;
+  animation: opcion-entrar 0.3s ease-out forwards;
+  animation-delay: calc(var(--i) * 35ms);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.opcion:last-child { margin-bottom: 0; }
+.opcion:hover,
+.opcion:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--c) 32%, #1a0f0a);
+  box-shadow: 0 0 16px 1px color-mix(in srgb, var(--c) 60%, transparent), inset 0 0 0 1px var(--c);
+  transform: translateX(4px);
+}
+.opcion[aria-selected="true"] {
+  background: color-mix(in srgb, var(--c) 40%, #1a0f0a);
+  box-shadow: inset 0 0 0 2px var(--c);
+}
+@keyframes opcion-entrar {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Foto de perfil (duende) con aro del color de cada nombre */
+.avatar {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #1a0f0a;
+  border: 2px solid var(--c);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.selector-boton .avatar { width: 38px; height: 38px; }
+.avatar.oculto { display: none; }
+
+/* Corazón pixelado al lado del nombre (Juani), con un latido suave */
+.corazon {
+  flex: none;
+  width: 22px;
+  height: 20px;
+  margin-left: 8px;
+  vertical-align: -3px;
+  overflow: visible;
+  filter: drop-shadow(0 0 4px rgba(255, 60, 120, 0.55));
+  transform-origin: center;
+  animation: latido 1.4s ease-in-out infinite;
+}
+.opcion .corazon { margin-left: -4px; }
+@keyframes latido {
+  0%, 45%, 100% { transform: scale(1); }
+  15% { transform: scale(1.18); }
+  30% { transform: scale(1.06); }
+}
+
+/* Nombres "mate" (Daniela y Ezequiel): colores oscuros y sin ningún brillo */
+.opcion.mate {
+  background: color-mix(in srgb, var(--c) 55%, #120b08);
+  border-color: color-mix(in srgb, var(--c) 70%, #8f8f8f);
+}
+.opcion.mate:hover,
+.opcion.mate:focus-visible {
+  background: color-mix(in srgb, var(--c) 80%, #120b08);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, #b5b5b5);
+}
+.opcion.mate[aria-selected="true"] { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 55%, #b5b5b5); }
+.mate .avatar,
+.admin-fila.mate .admin-foto { box-shadow: none; }
+.selector-boton.mate:hover:not(:disabled),
+.selector-boton.mate:focus-visible { box-shadow: 0 4px 0 color-mix(in srgb, var(--c) 45%, #000); }
+.selector-boton.mate.elegido { background: color-mix(in srgb, var(--c) 12%, #fff); }
+
+/* Botones */
+.btn {
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  border-radius: 10px;
+  transition: transform 0.1s, filter 0.2s;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-principal {
+  display: block;
+  width: 100%;
+  background: var(--rojo);
+  color: #fff;
+  font-size: 1.4rem;
+  padding: 16px;
+  box-shadow: 0 5px 0 var(--rojo-oscuro);
+}
+.btn-principal:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-principal:active:not(:disabled) { box-shadow: 0 2px 0 var(--rojo-oscuro); transform: translateY(3px); }
+
+/* Ruleta */
+.tarjeta-sorteo { text-align: center; }
+
+.ruleta {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: repeating-linear-gradient(45deg, var(--rojo) 0 14px, #fff 14px 28px);
+  padding: 8px;
+}
+#nombre-actual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--crema);
+  border-radius: 8px;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 10px;
+}
+.ruleta.girando #nombre-actual { color: #9a8a78; }
+.ruleta.ganador #nombre-actual {
+  color: var(--rojo);
+  animation: pop 0.5s ease-out;
+}
+.ruleta.ganador {
+  animation: brillo 1s ease-in-out 3;
+}
+@keyframes pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes brillo {
+  50% { box-shadow: 0 0 30px 8px var(--dorado); }
+}
+
+.mensaje {
+  min-height: 1.4em;
+  margin: 16px 0 0;
+  font-weight: 600;
+  color: var(--verde);
+}
+.mensaje.error { color: var(--rojo); }
+
+.aviso-demo {
+  text-align: center;
+  color: var(--dorado);
+  font-size: 0.85rem;
+}
+
+/* Mini Santa: vive abajo de la tarjeta, salta, se agarra del borde y se cae */
+.santa-baile {
+  position: relative;
+  z-index: 2;                 /* por encima de la tarjeta, para que se vean las manos agarrando el borde */
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 260px;
+  margin: 0 0 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+.santa-svg { max-width: 60vw; height: auto; overflow: visible; }
+
+/* El lienzo 3D sube por detrás del borde de la tarjeta; no tapa clics */
+.santa-3d {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: -150px;
+  width: 100%;
+  height: 410px;
+  pointer-events: none;
+}
+.santa-baile.con-3d { cursor: pointer; }
+.santa-baile.con-3d .santa-svg { display: none; }
+.santa-baile.con-3d .santa-3d { display: block; }
+
+/* Santa plano de respaldo (si el navegador no tiene 3D): se balancea tranquilo */
+.santa { transform-origin: 100px 230px; animation: santa-respira 1.6s ease-in-out infinite alternate; }
+.sombra { fill: rgba(0, 0, 0, 0.35); }
+.ojo { transform-box: fill-box; transform-origin: center; animation: parpadeo 3.5s infinite; }
+
+@keyframes santa-respira {
+  from { transform: translateY(0) rotate(-2deg); }
+  to { transform: translateY(-4px) rotate(2deg); }
+}
+@keyframes parpadeo {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .santa, .ojo, .corazon { animation: none; }
+  .opcion { opacity: 1; animation: none; }
+}
+
+/* Confeti */
+.confeti {
+  position: fixed;
+  top: -10px;
+  width: 10px;
+  height: 14px;
+  z-index: 10;
+  pointer-events: none;
+  animation: confeti-caer 2.5s ease-in forwards;
+}
+@keyframes confeti-caer {
+  to { transform: translateY(105vh) rotate(720deg); opacity: 0.7; }
+}
+
+/* ---------- Admin ---------- */
+:root {
+  --fuente-ui: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "SF Pro Display", Roboto, sans-serif;
+}
+
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* Íconos lineales */
+.ico {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* LED que recorre el borde de los botones al pasar el cursor (o al llegar con el teclado) */
+@property --giro {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.luz { position: relative; }
+.luz::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  padding: 3px;
+  border-radius: inherit;
+  /* Dos destellos de LED que corren por el borde */
+  background: conic-gradient(from var(--giro),
+    transparent 0deg, rgba(0, 190, 255, 0.95) 55deg, #ffffff 85deg, rgba(0, 190, 255, 0.95) 105deg, transparent 150deg,
+    transparent 180deg, rgba(0, 190, 255, 0.95) 235deg, #ffffff 265deg, rgba(0, 190, 255, 0.95) 285deg, transparent 330deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+  animation: led-gira 1.8s linear infinite;
+}
+@keyframes led-gira { to { --giro: 360deg; } }
+.luz:focus-visible { outline: none; }
+.luz:focus-visible::after { opacity: 1; }
+.luz:focus-visible,
+.luz:active:not(:disabled) {
+  box-shadow: 0 0 0 1px rgba(120, 190, 255, 0.4), 0 0 16px 2px rgba(0, 150, 255, 0.5);
+}
+@media (hover: hover) {
+  .luz:hover:not(:disabled)::after { opacity: 1; }
+  .luz:hover:not(:disabled) {
+    box-shadow: 0 0 0 1px rgba(120, 190, 255, 0.4), 0 0 16px 2px rgba(0, 150, 255, 0.5),
+      0 0 38px rgba(0, 120, 255, 0.25);
+  }
+}
+
+/* Botón de admin: arriba a la derecha */
+.btn-admin {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px 0 12px;
+  font: 600 0.9rem/1 var(--fuente-ui);
+  letter-spacing: 0.03em;
+  color: #eef4ff;
+  background: rgba(6, 14, 30, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: box-shadow 0.25s, transform 0.2s, background 0.2s;
+}
+.btn-admin .ico { width: 18px; height: 18px; color: #7cc4ff; }
+@media (hover: hover) {
+  .btn-admin:hover { background: rgba(10, 24, 52, 0.8); transform: translateY(-1px); }
+}
+@media (max-width: 600px) {
+  .contenedor { padding-top: 64px; }
+}
+
+/* Ventana a pantalla completa, estilo consola */
+body:has(.admin[open]) { overflow: hidden; }
+
+.admin {
+  --a-texto: #f2f6ff;
+  --a-suave: rgba(222, 232, 255, 0.72);
+  --a-tenue: rgba(222, 232, 255, 0.48);
+  --a-vidrio: rgba(255, 255, 255, 0.055);
+  --a-vidrio-2: rgba(255, 255, 255, 0.09);
+  --a-borde: rgba(255, 255, 255, 0.12);
+  --a-azul: #2f7bff;
+  --a-celeste: #7cc4ff;
+  --a-verde: #43e396;
+  --a-rojo: #ff5c7a;
+  --a-ambar: #ffc857;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--a-texto);
+  background: #050a18;
+  font-family: var(--fuente-ui);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.admin[open] { animation: admin-abrir 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.admin::backdrop { background: rgba(3, 6, 14, 0.7); }
+@keyframes admin-abrir { from { opacity: 0; transform: scale(1.03); } }
+.admin [hidden] { display: none !important; }
+
+.admin-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(1000px 600px at 85% -10%, rgba(47, 123, 255, 0.38), transparent 60%),
+    radial-gradient(800px 520px at -10% 110%, rgba(110, 70, 255, 0.3), transparent 60%),
+    linear-gradient(165deg, #071029 0%, #0a1838 45%, #040814 100%);
+}
+/* Ondas de luz que se mueven despacio */
+.admin-fondo::before,
+.admin-fondo::after {
+  content: "";
+  position: absolute;
+  left: -30vmax;
+  width: 160vmax;
+  height: 34vmax;
+  border-radius: 50%;
+  border-top: 2px solid rgba(140, 200, 255, 0.22);
+  background: radial-gradient(closest-side, rgba(90, 160, 255, 0.16), transparent);
+  filter: blur(2px);
+  animation: ola 16s ease-in-out infinite alternate;
+}
+.admin-fondo::before { top: 34%; }
+.admin-fondo::after {
+  top: 52%;
+  border-top-color: rgba(180, 150, 255, 0.18);
+  background: radial-gradient(closest-side, rgba(140, 100, 255, 0.13), transparent);
+  animation-duration: 22s;
+  animation-direction: alternate-reverse;
+}
+@keyframes ola {
+  from { transform: translateX(-5vmax) rotate(-7deg); }
+  to { transform: translateX(5vmax) rotate(-2deg); }
+}
+
+.admin-interior {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 18px 16px 40px;
+}
+
+/* Barra de arriba */
+.admin-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.admin-marca { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.admin-marca-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2f7bff, #7b5cff);
+  box-shadow: 0 8px 24px rgba(47, 123, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.admin-marca-ico .ico { width: 23px; height: 23px; color: #fff; }
+.admin-sobre {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--a-tenue);
+}
+.admin h2 {
+  margin: 2px 0 0;
+  font-size: 1.45rem;
+  font-weight: 300;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+
+.admin-icono-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--a-texto);
+  background: var(--a-vidrio-2);
+  border: 1px solid var(--a-borde);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.25s;
+}
+.admin-icono-grande { width: 54px; height: 54px; }
+@media (hover: hover) {
+  .admin-icono-btn:hover { background: rgba(255, 255, 255, 0.15); transform: translateY(-1px); }
+}
+
+/* Tarjetas de vidrio */
+.admin-tarjeta {
+  padding: 28px 22px 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.035));
+  border: 1px solid var(--a-borde);
+  border-radius: 24px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.admin-vista { animation: vista-entrar 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes vista-entrar { from { opacity: 0; transform: translateY(12px); } }
+
+.admin-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #ffe7a8;
+  background: rgba(255, 200, 87, 0.08);
+  border: 1px solid rgba(255, 200, 87, 0.25);
+  border-radius: 14px;
+}
+.admin-aviso .ico { width: 18px; height: 18px; margin-top: 1px; }
+
+.admin-avatar {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, #5aa8ff, #2f5bff 55%, #5a3dff);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08), 0 14px 40px rgba(61, 139, 255, 0.45);
+}
+.admin-avatar .ico { width: 38px; height: 38px; color: #fff; stroke-width: 1.6; }
+.admin-bajada {
+  margin: 0 0 22px;
+  text-align: center;
+  line-height: 1.5;
+  color: var(--a-suave);
+}
+
+/* Código de acceso: 4 puntos + teclado numérico */
+.admin-pin-puntos {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 0 0 26px;
+}
+.admin-pin-puntos span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(222, 232, 255, 0.45);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.2s, transform 0.15s;
+}
+.admin-pin-puntos span.lleno {
+  background: var(--a-celeste);
+  border-color: var(--a-celeste);
+  box-shadow: 0 0 12px rgba(124, 196, 255, 0.9);
+  transform: scale(1.1);
+}
+.admin-pin-puntos.bien span { background: var(--a-verde); border-color: var(--a-verde); box-shadow: 0 0 12px rgba(67, 227, 150, 0.9); }
+.admin-pin-puntos.mal { animation: sacudir 0.4s; }
+.admin-pin-puntos.mal span { background: var(--a-rojo); border-color: var(--a-rojo); box-shadow: 0 0 12px rgba(255, 92, 122, 0.9); }
+@keyframes sacudir {
+  20%, 60% { transform: translateX(-10px); }
+  40%, 80% { transform: translateX(10px); }
+}
+
+.admin-teclado {
+  display: grid;
+  grid-template-columns: repeat(3, 72px);
+  justify-content: center;
+  gap: 14px 22px;
+}
+.admin-tecla {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  font: 300 1.8rem/1 var(--fuente-ui);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.25s;
+}
+.admin-tecla:active:not(:disabled) { background: rgba(124, 196, 255, 0.25); transform: scale(0.94); }
+.admin-tecla:disabled { opacity: 0.35; cursor: not-allowed; }
+.admin-tecla-borrar { background: transparent; border-color: transparent; }
+.admin-tecla-borrar .ico { width: 26px; height: 26px; }
+@media (hover: hover) {
+  .admin-tecla:hover:not(:disabled) { background: rgba(255, 255, 255, 0.14); }
+}
+@media (max-width: 360px) {
+  .admin-teclado { grid-template-columns: repeat(3, 64px); gap: 12px 18px; }
+  .admin-tecla { width: 64px; height: 64px; }
+}
+
+/* Campos */
+.admin-campo { display: block; margin-bottom: 16px; }
+.admin-etiqueta {
+  display: block;
+  margin: 0 0 8px 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--a-tenue);
+}
+.admin-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 54px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  transition: border-color 0.2s, box-shadow 0.25s, background 0.2s;
+}
+.admin-input .ico { color: var(--a-tenue); transition: color 0.2s; }
+.admin-input:focus-within {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--a-celeste);
+  box-shadow: 0 0 0 3px rgba(47, 123, 255, 0.28), 0 0 26px rgba(47, 123, 255, 0.35);
+}
+.admin-input:focus-within .ico { color: var(--a-celeste); }
+.admin-input input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  font: inherit;
+  font-size: 1.05rem;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+.admin-input input::placeholder { color: rgba(222, 232, 255, 0.35); }
+.admin-input input:-webkit-autofill {
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+  transition: background-color 9999s;
+}
+.admin-input-codigo { height: 68px; }
+.admin-input-codigo input {
+  padding-left: 0.5em;
+  font-size: 1.9rem;
+  font-weight: 600;
+  letter-spacing: 0.5em;
+  text-align: center;
+}
+
+/* Botones */
+.admin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 22px;
+  font: 600 1.05rem/1.2 var(--fuente-ui);
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.25s, background 0.2s, color 0.2s;
+}
+.admin-btn:disabled { opacity: 0.55; cursor: progress; }
+.admin-btn-primario {
+  color: #fff;
+  background: linear-gradient(135deg, #2f7bff, #4fa2ff);
+  box-shadow: 0 10px 28px rgba(47, 123, 255, 0.4);
+}
+.admin-btn-secundario {
+  color: var(--a-texto);
+  background: var(--a-vidrio-2);
+  border-color: var(--a-borde);
+}
+.admin-btn-secundario[aria-pressed="true"] { background: rgba(47, 123, 255, 0.2); border-color: rgba(124, 196, 255, 0.4); }
+.admin-btn-texto {
+  width: auto;
+  min-height: 44px;
+  margin: 14px auto 0;
+  padding: 0 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--a-suave);
+  background: transparent;
+}
+.admin-btn-peligro {
+  color: #fff;
+  background: linear-gradient(135deg, #ff4d6d, #ff7a59);
+  box-shadow: 0 8px 22px rgba(255, 77, 109, 0.35);
+}
+@media (hover: hover) {
+  .admin-btn:hover:not(:disabled) { transform: translateY(-1px); }
+  .admin-btn-texto:hover:not(:disabled) { color: #fff; }
+  .admin-btn-secundario:hover:not(:disabled) { background: rgba(255, 255, 255, 0.14); }
+}
+.admin-fila-botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px;
+  margin-top: 10px;
+}
+.admin-fila-botones .admin-btn-texto { margin: 0; }
+
+/* Mensajes */
+.admin-msj {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--a-verde);
+}
+.admin-msj:empty { display: none; }
+.admin-msj.error { color: var(--a-rojo); }
+.admin-toast {
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  text-align: left;
+  background: rgba(67, 227, 150, 0.1);
+  border: 1px solid rgba(67, 227, 150, 0.3);
+  border-radius: 16px;
+  animation: vista-entrar 0.3s;
+}
+.admin-toast.error { background: rgba(255, 92, 122, 0.1); border-color: rgba(255, 92, 122, 0.35); }
+
+/* Anillos (cuenta regresiva del código y progreso del sorteo) */
+.admin-reloj,
+.admin-anillo { position: relative; flex: none; }
+.admin-reloj { width: 128px; height: 128px; margin: 0 auto 12px; }
+.admin-anillo { width: 104px; height: 104px; }
+.admin-reloj svg,
+.admin-anillo svg { display: block; width: 100%; height: 100%; overflow: visible; transform: rotate(-90deg); }
+.anillo-fondo { fill: none; stroke: rgba(255, 255, 255, 0.1); stroke-width: 8; }
+.anillo-arco {
+  fill: none;
+  stroke: var(--a-celeste);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 326.73;
+  stroke-dashoffset: 326.73;
+  filter: drop-shadow(0 0 6px rgba(124, 196, 255, 0.8));
+  transition: stroke-dashoffset 0.6s ease, stroke 0.3s;
+}
+.admin-reloj .anillo-arco { transition: stroke 0.3s; } /* avanza solo, cada 1/10 de segundo */
+.admin-reloj.urgente .anillo-arco { stroke: var(--a-ambar); filter: drop-shadow(0 0 6px rgba(255, 200, 87, 0.8)); }
+.admin-reloj.vencido .anillo-arco { stroke: var(--a-rojo); }
+.admin-anillo .anillo-arco { stroke: var(--a-verde); filter: drop-shadow(0 0 6px rgba(67, 227, 150, 0.7)); }
+.admin-reloj-centro {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+.admin-reloj-centro strong {
+  font-size: 1.9rem;
+  font-weight: 300;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.admin-reloj-centro span {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--a-tenue);
+}
+.admin-reloj.vencido .admin-reloj-centro strong { color: var(--a-rojo); }
+
+/* Panel */
+.admin-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 14px;
+  padding: 20px;
+}
+.admin-stats-texto { min-width: 0; }
+.admin-resumen { margin: 4px 0 2px; font-size: 1.2rem; font-weight: 600; color: #fff; }
+.admin-faltan { margin: 0; color: var(--a-suave); }
+
+.admin-acciones { display: flex; gap: 10px; margin-bottom: 14px; }
+.admin-acciones .admin-btn { flex: 1; }
+
+.admin-lista {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-fila {
+  --c: var(--a-celeste);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 14px;
+  padding: 14px;
+  background: var(--a-vidrio);
+  border: 1px solid var(--a-borde);
+  border-radius: 18px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.admin-lista.animar .admin-fila { animation: vista-entrar 0.4s both; animation-delay: calc(var(--i) * 45ms); }
+@media (hover: hover) {
+  .admin-fila:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
+}
+.admin-foto {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #0a1430;
+  border: 2px solid var(--c);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.3), 0 0 16px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.admin-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.admin-info strong { font-size: 1.08rem; font-weight: 600; color: #fff; overflow-wrap: anywhere; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 999px;
+}
+.chip .ico { width: 14px; height: 14px; stroke-width: 2.2; }
+.chip-ok { color: var(--a-verde); background: rgba(67, 227, 150, 0.12); border: 1px solid rgba(67, 227, 150, 0.3); }
+.chip-pend { color: var(--a-ambar); background: rgba(255, 200, 87, 0.1); border: 1px solid rgba(255, 200, 87, 0.28); }
+.admin-toca {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  font-size: 0.92rem;
+  color: var(--a-suave);
+}
+.admin-toca .ico { width: 16px; height: 16px; color: #ff9ab0; }
+.admin-toca span, .admin-toca b { white-space: nowrap; }
+.admin-toca b { font-weight: 600; color: #fff; }
+
+.admin-resetear {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  font: 600 0.88rem/1 var(--fuente-ui);
+  color: #ffd0da;
+  background: rgba(255, 92, 122, 0.1);
+  border: 1px solid rgba(255, 92, 122, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.25s;
+}
+.admin-resetear .ico { width: 16px; height: 16px; }
+.admin-resetear:disabled { opacity: 0.5; cursor: progress; }
+@media (hover: hover) {
+  .admin-resetear:hover:not(:disabled) { color: #fff; background: rgba(255, 92, 122, 0.24); }
+}
+
+.admin-confirmar {
+  flex-basis: 100%;
+  padding: 14px;
+  background: rgba(255, 92, 122, 0.08);
+  border: 1px solid rgba(255, 92, 122, 0.3);
+  border-radius: 14px;
+  animation: vista-entrar 0.3s;
+}
+.admin-confirmar-texto {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--a-suave);
+}
+.admin-confirmar-texto .ico { width: 18px; height: 18px; margin-top: 1px; color: var(--a-rojo); }
+.admin-confirmar-botones { display: flex; gap: 8px; }
+.admin-confirmar-botones .admin-btn { flex: 1; min-height: 46px; padding: 0 12px; font-size: 0.95rem; }
+
+#admin-salir { margin-top: 22px; }
+
+@media (max-width: 420px) {
+  .admin-fila { gap: 12px; padding: 12px; }
+  .admin-resetear { padding: 0 12px; }
+  .admin-tarjeta { padding: 24px 16px 18px; }
+  .admin-stats { gap: 14px; padding: 16px; }
+  .admin h2 { font-size: 1.3rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin[open], .admin-vista, .admin-toast, .admin-confirmar, .admin-lista.animar .admin-fila,
+  .admin-fondo::before, .admin-fondo::after { animation: none; }
+  .luz::after { animation: none; }
+}
+</style>
+</head>
+<body>
+  <!-- Fondo: copos de nieve -->
+  <div id="fondo" aria-hidden="true"></div>
+
+  <!-- Íconos (estilo lineal) que usa la parte de admin -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-3.6 8-10V5.2L12 2 4 5.2V12c0 6.4 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="11" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="5"/><path d="m11.6 11.4 9.4-9.4"/><path d="m16.5 6.5 3 3"/><path d="m14 9 2 2"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="m3 7 9 6 9-6"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M21.5 2.5 10.5 13.5"/><path d="m21.5 2.5-7 19-4-8-8-4Z"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.7 5.1A9.6 9.6 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-2.2 3.1"/><path d="M6.6 6.6C4 8.3 2.5 12 2.5 12S6 19 12 19a9 9 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9L3.5 15.5"/><path d="M3.5 20v-4.5H8"/><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9l2.4 2.4"/><path d="M20.5 4v4.5H16"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6L3.5 8.5"/><path d="M3.5 3.5v5h5"/></symbol>
+    <symbol id="i-log-out" viewBox="0 0 24 24"><path d="M9 21H5.5A2.5 2.5 0 0 1 3 18.5v-13A2.5 2.5 0 0 1 5.5 3H9"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4.5" rx="1.2"/><path d="M12 8v13"/><path d="M19.5 12.5V19a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-6.5"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10.5 3 12 8 12 8s1.5-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4 2.4 17.5a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></symbol>
+    <!-- Corazón pixelado de Juani (10 x 9 cuadraditos) -->
+    <symbol id="i-corazon" viewBox="0 0 10 9">
+      <g shape-rendering="crispEdges">
+        <g fill="#fd0000">
+          <rect x="1" y="0" width="3" height="1"/><rect x="6" y="0" width="2" height="1"/>
+          <rect x="0" y="1" width="1" height="4"/><rect x="3" y="1" width="6" height="1"/>
+          <rect x="2" y="2" width="7" height="1"/><rect x="1" y="3" width="8" height="1"/>
+          <rect x="2" y="4" width="7" height="1"/><rect x="1" y="5" width="7" height="1"/>
+          <rect x="2" y="6" width="5" height="1"/><rect x="3" y="7" width="3" height="1"/>
+          <rect x="4" y="8" width="1" height="1"/>
+        </g>
+        <g fill="#fdfafa">
+          <rect x="1" y="1" width="2" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/>
+        </g>
+        <g fill="#780709">
+          <rect x="8" y="0" width="1" height="1"/><rect x="9" y="1" width="1" height="4"/>
+          <rect x="8" y="5" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/>
+          <rect x="6" y="7" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/>
+        </g>
+      </g>
+    </symbol>
+    <symbol id="i-delete" viewBox="0 0 24 24"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1Z"/><path d="m17.5 9.5-5 5"/><path d="m12.5 9.5 5 5"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></symbol>
+  </svg>
+
+  <!-- Botón para entrar como admin (arriba a la derecha) -->
+  <button type="button" id="btn-admin" class="btn-admin luz">
+    <svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>
+    <span>Ingresá como admin</span>
+  </button>
+
+  <main class="contenedor">
+    <h1>🎁 Amigo Invisible 🎁</h1>
+
+    <section class="tarjeta tarjeta-sorteo">
+      <p id="etiqueta-quien" class="etiqueta">¿Quién sos?</p>
+      <div id="selector" class="selector">
+        <button type="button" id="selector-boton" class="selector-boton"
+                aria-haspopup="listbox" aria-expanded="false" aria-labelledby="etiqueta-quien selector-texto" disabled>
+          <img id="selector-avatar" class="avatar oculto" alt="" width="38" height="38">
+          <span id="selector-texto" class="selector-texto">Cargando participantes...</span>
+          <span class="selector-flecha" aria-hidden="true">▾</span>
+        </button>
+        <ul id="selector-lista" class="selector-lista" role="listbox" aria-labelledby="etiqueta-quien" hidden></ul>
+      </div>
+
+      <div id="ruleta" class="ruleta">
+        <span id="nombre-actual">¿Quién te toca?</span>
+      </div>
+
+      <button id="btn-sortear" class="btn btn-principal" disabled>🎲 Sortear</button>
+      <p id="mensaje" class="mensaje"></p>
+    </section>
+
+    <!-- Mini Santa: 3D con santa3d.js (salta, se agarra de la tarjeta y se cae); si no hay 3D, queda este dibujo plano -->
+    <div class="santa-baile" aria-hidden="true" title="¡Tocalo!">
+      <svg class="santa-svg" viewBox="0 0 200 260" width="190" height="247">
+        <ellipse class="sombra" cx="100" cy="248" rx="52" ry="7" />
+        <g class="santa">
+          <!-- Piernas -->
+          <g class="pierna pierna-izq">
+            <rect x="74" y="160" width="22" height="54" rx="9" fill="#a70f26" />
+            <rect x="64" y="206" width="34" height="18" rx="9" fill="#1d1d1d" />
+          </g>
+          <g class="pierna pierna-der">
+            <rect x="104" y="160" width="22" height="54" rx="9" fill="#a70f26" />
+            <rect x="102" y="206" width="34" height="18" rx="9" fill="#1d1d1d" />
+          </g>
+          <!-- Brazos -->
+          <g class="brazo brazo-izq">
+            <rect x="26" y="104" width="42" height="19" rx="9.5" fill="#d4142f" />
+            <rect x="24" y="102" width="11" height="23" rx="5" fill="#fff" />
+            <circle cx="19" cy="113.5" r="10" fill="#1d1d1d" />
+          </g>
+          <g class="brazo brazo-der">
+            <rect x="132" y="104" width="42" height="19" rx="9.5" fill="#d4142f" />
+            <rect x="165" y="102" width="11" height="23" rx="5" fill="#fff" />
+            <circle cx="181" cy="113.5" r="10" fill="#1d1d1d" />
+          </g>
+          <!-- Cuerpo -->
+          <ellipse cx="100" cy="138" rx="48" ry="46" fill="#d4142f" />
+          <rect x="94" y="96" width="12" height="84" fill="#fff" />
+          <rect x="56" y="170" width="88" height="13" rx="6.5" fill="#fff" />
+          <rect x="53" y="146" width="94" height="13" fill="#1d1d1d" />
+          <rect x="87" y="143" width="26" height="19" rx="3" fill="none" stroke="#f4c542" stroke-width="4" />
+          <!-- Cabeza -->
+          <g class="cabeza">
+            <circle cx="100" cy="72" r="27" fill="#f6c9a8" />
+            <circle cx="84" cy="77" r="5" fill="#f28b8b" opacity="0.55" />
+            <circle cx="116" cy="77" r="5" fill="#f28b8b" opacity="0.55" />
+            <path d="M71 66 Q68 106 100 122 Q132 106 129 66 Q116 88 100 88 Q84 88 71 66 Z" fill="#fff" />
+            <ellipse class="boca" cx="100" cy="95" rx="5" ry="4" fill="#7a1020" />
+            <ellipse cx="91" cy="86" rx="10" ry="5.5" fill="#fff" />
+            <ellipse cx="109" cy="86" rx="10" ry="5.5" fill="#fff" />
+            <circle cx="100" cy="79" r="5.5" fill="#e89a78" />
+            <circle class="ojo" cx="90" cy="66" r="3" fill="#2b1d14" />
+            <circle class="ojo" cx="110" cy="66" r="3" fill="#2b1d14" />
+            <g class="gorro">
+              <path d="M73 47 Q90 4 142 16 Q122 26 127 47 Z" fill="#d4142f" />
+              <rect x="68" y="42" width="64" height="13" rx="6.5" fill="#fff" />
+              <circle cx="144" cy="17" r="9" fill="#fff" />
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <p id="aviso-demo" class="aviso-demo oculto">
+      Modo prueba: nombres de ejemplo, no se manda ningún mail y nada de esto toca el sorteo real.
+    </p>
+  </main>
+
+  <!-- Ventana de admin: entrar, crear/cambiar contraseña con código por mail, y panel -->
+  <dialog id="admin" class="admin" aria-labelledby="admin-titulo">
+    <div class="admin-fondo" aria-hidden="true"></div>
+    <div class="admin-interior">
+      <header class="admin-barra">
+        <div class="admin-marca">
+          <span class="admin-marca-ico"><svg class="ico" aria-hidden="true"><use id="admin-marca-uso" href="#i-shield"/></svg></span>
+          <div>
+            <p class="admin-sobre">Amigo Invisible</p>
+            <h2 id="admin-titulo">Entrar como admin</h2>
+          </div>
+        </div>
+        <button type="button" id="admin-cerrar" class="admin-icono-btn luz" aria-label="Cerrar">
+          <svg class="ico" aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+      </header>
+
+      <p id="admin-ayuda-demo" class="admin-aviso" hidden>
+        <svg class="ico" aria-hidden="true"><use href="#i-info"/></svg>
+        <span>Modo prueba: sirve cualquier usuario y contraseña, y el código te lo muestro acá en vez de mandarlo por mail.</span>
+      </p>
+
+      <!-- 0. Código de acceso de 4 números (antes de todo) -->
+      <div id="admin-pin" class="admin-vista admin-tarjeta admin-pin" hidden>
+        <div class="admin-avatar"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg></div>
+        <p class="admin-bajada">Ingresá el código de acceso de 4 números.</p>
+        <div id="admin-pin-puntos" class="admin-pin-puntos" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="admin-teclado" role="group" aria-label="Teclado numérico">
+          <button type="button" class="admin-tecla luz" data-n="1">1</button>
+          <button type="button" class="admin-tecla luz" data-n="2">2</button>
+          <button type="button" class="admin-tecla luz" data-n="3">3</button>
+          <button type="button" class="admin-tecla luz" data-n="4">4</button>
+          <button type="button" class="admin-tecla luz" data-n="5">5</button>
+          <button type="button" class="admin-tecla luz" data-n="6">6</button>
+          <button type="button" class="admin-tecla luz" data-n="7">7</button>
+          <button type="button" class="admin-tecla luz" data-n="8">8</button>
+          <button type="button" class="admin-tecla luz" data-n="9">9</button>
+          <span aria-hidden="true"></span>
+          <button type="button" class="admin-tecla luz" data-n="0">0</button>
+          <button type="button" id="admin-pin-borrar" class="admin-tecla admin-tecla-borrar luz" aria-label="Borrar">
+            <svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg>
+          </button>
+        </div>
+        <p id="admin-pin-msj" class="admin-msj" role="status"></p>
+      </div>
+
+      <!-- 1. Entrar -->
+      <form id="admin-login" class="admin-vista admin-tarjeta" novalidate hidden>
+        <div class="admin-avatar"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg></div>
+        <p class="admin-bajada">Solo el organizador puede entrar acá.</p>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Usuario</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-user"/></svg>
+            <input id="admin-usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Contraseña</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
+            <input id="admin-clave" type="password" autocomplete="current-password">
+          </span>
+        </label>
+        <button id="admin-entrar" class="admin-btn admin-btn-primario luz" type="submit">
+          <span>Entrar</span>
+          <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+        </button>
+        <p id="admin-login-msj" class="admin-msj" role="status"></p>
+        <button type="button" id="admin-ir-recuperar" class="admin-btn admin-btn-texto luz">
+          <svg class="ico" aria-hidden="true"><use href="#i-key"/></svg>
+          <span>¿Primera vez o te olvidaste la contraseña?</span>
+        </button>
+      </form>
+
+      <!-- 2. Pedir el código al Gmail -->
+      <form id="admin-mail" class="admin-vista admin-tarjeta" novalidate hidden>
+        <div class="admin-avatar"><svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg></div>
+        <p class="admin-bajada">
+          Escribí tu Gmail y te mando un código para crear o cambiar tu usuario y contraseña.
+          El código vence en 2 minutos.
+        </p>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Tu Gmail</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg>
+            <input id="admin-mail-input" type="email" autocomplete="email" autocapitalize="none" spellcheck="false">
+          </span>
+        </label>
+        <button id="admin-mail-enviar" class="admin-btn admin-btn-primario luz" type="submit">
+          <svg class="ico" aria-hidden="true"><use href="#i-send"/></svg>
+          <span>Mandarme el código</span>
+        </button>
+        <p id="admin-mail-msj" class="admin-msj" role="status"></p>
+        <button type="button" class="admin-btn admin-btn-texto luz admin-volver">
+          <svg class="ico" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+          <span>Volver</span>
+        </button>
+      </form>
+
+      <!-- 3. Código + usuario y contraseña nuevos -->
+      <form id="admin-codigo" class="admin-vista admin-tarjeta" novalidate hidden>
+        <div id="admin-reloj" class="admin-reloj" aria-hidden="true">
+          <svg viewBox="0 0 120 120"><circle class="anillo-fondo" cx="60" cy="60" r="52"/><circle id="admin-reloj-arco" class="anillo-arco" cx="60" cy="60" r="52"/></svg>
+          <div class="admin-reloj-centro"><strong id="admin-reloj-texto">2:00</strong><span>vence en</span></div>
+        </div>
+        <p id="admin-enviado" class="admin-bajada"></p>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Código del mail</span>
+          <span class="admin-input admin-input-codigo">
+            <input id="admin-codigo-input" type="text" inputmode="numeric" autocomplete="one-time-code"
+                   maxlength="6" placeholder="······">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Usuario</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-user"/></svg>
+            <input id="admin-nuevo-usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Contraseña nueva</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
+            <input id="admin-nueva-clave" type="password" autocomplete="new-password" placeholder="Al menos 6 caracteres">
+          </span>
+        </label>
+        <label class="admin-campo">
+          <span class="admin-etiqueta">Repetí la contraseña</span>
+          <span class="admin-input">
+            <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
+            <input id="admin-nueva-clave2" type="password" autocomplete="new-password">
+          </span>
+        </label>
+        <button id="admin-guardar" class="admin-btn admin-btn-primario luz" type="submit">
+          <svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg>
+          <span>Guardar y entrar</span>
+        </button>
+        <p id="admin-codigo-msj" class="admin-msj" role="status"></p>
+        <div class="admin-fila-botones">
+          <button type="button" id="admin-reenviar" class="admin-btn admin-btn-texto luz">
+            <svg class="ico" aria-hidden="true"><use href="#i-send"/></svg>
+            <span>Mandarme otro código</span>
+          </button>
+          <button type="button" class="admin-btn admin-btn-texto luz admin-volver">
+            <svg class="ico" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+            <span>Volver</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- 4. Panel -->
+      <div id="admin-panel" class="admin-vista" hidden>
+        <section class="admin-tarjeta admin-stats">
+          <div class="admin-anillo" aria-hidden="true">
+            <svg viewBox="0 0 120 120"><circle class="anillo-fondo" cx="60" cy="60" r="52"/><circle id="admin-anillo-arco" class="anillo-arco" cx="60" cy="60" r="52"/></svg>
+            <div class="admin-reloj-centro"><strong id="admin-cuantos">0</strong><span id="admin-total">de 0</span></div>
+          </div>
+          <div class="admin-stats-texto">
+            <p class="admin-sobre">Progreso del sorteo</p>
+            <p id="admin-resumen" class="admin-resumen">Cargando...</p>
+            <p id="admin-faltan" class="admin-faltan"></p>
+          </div>
+        </section>
+        <div class="admin-acciones">
+          <button type="button" id="admin-ver" class="admin-btn admin-btn-secundario luz" aria-pressed="false"></button>
+          <button type="button" id="admin-actualizar" class="admin-icono-btn admin-icono-grande luz" aria-label="Actualizar">
+            <svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg>
+          </button>
+        </div>
+        <p id="admin-msj" class="admin-msj admin-toast" role="status"></p>
+        <p id="admin-alerta" class="admin-msj admin-toast error" role="alert"></p>
+        <ul id="admin-lista" class="admin-lista"></ul>
+        <button type="button" id="admin-salir" class="admin-btn admin-btn-texto luz">
+          <svg class="ico" aria-hidden="true"><use href="#i-log-out"/></svg>
+          <span>Cerrar sesión de admin</span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>// =====================================================
+// CONFIGURACIÓN
+// Pegá acá la URL de tu Apps Script (termina en /exec).
+// Si queda vacía, la web funciona en "modo prueba" con nombres de ejemplo.
+// =====================================================
+const SCRIPT_URL = "";
+
+const MODO_DEMO = !SCRIPT_URL;
+// En modo prueba se guarda aparte, así probar no pisa el resultado real del mismo celular.
+const CLAVE_RESULTADO = MODO_DEMO ? "amigo-invisible-demo-resultado" : "amigo-invisible-resultado";
+
+// ---------- Elementos ----------
+const selector = document.getElementById("selector");
+const selectorBoton = document.getElementById("selector-boton");
+const selectorTexto = document.getElementById("selector-texto");
+const selectorAvatar = document.getElementById("selector-avatar");
+const selectorLista = document.getElementById("selector-lista");
+const ruleta = document.getElementById("ruleta");
+const nombreActual = document.getElementById("nombre-actual");
+const btnSortear = document.getElementById("btn-sortear");
+const mensaje = document.getElementById("mensaje");
+const avisoDemo = document.getElementById("aviso-demo");
+
+let participantes = [];
+let quienElegido = "";
+
+// Un color de luz distinto para cada nombre (se repiten si hay más de 12).
+const COLORES_NOMBRES = [
+  "#ff4d6d", "#ffc93c", "#3ddc84", "#4fd1ff", "#b388ff", "#ff8a3d",
+  "#ff6fb5", "#7cf5e0", "#c6ff4d", "#6e8bff", "#ff5ce1", "#ffe066",
+];
+// Algunos tienen su estilo propio: Fernando azul, Juani rosa con un corazón pixelado,
+// Daniela (gris) y Ezequiel con colores oscuros y sin brillo ("mate").
+const ESTILOS_NOMBRES = {
+  Fernando: { color: "#1e6bff" },
+  Juani: { color: "#ff4fa3", corazon: true },
+  Daniela: { color: "#4b4b50", mate: true },
+  Ezequiel: { color: "#2f4054", mate: true },
+};
+function estiloDe(nombre) {
+  return ESTILOS_NOMBRES[nombre] || {};
+}
+function colorDe(nombre) {
+  if (estiloDe(nombre).color) return estiloDe(nombre).color;
+  const i = participantes.indexOf(nombre);
+  return COLORES_NOMBRES[(i < 0 ? 0 : i) % COLORES_NOMBRES.length];
+}
+// Pone el estilo propio (sin brillo y/o corazón) en una barra de nombre.
+// `dondeCorazon` es el elemento al que se le agrega el corazón al lado del nombre.
+function decorarNombre(barra, nombre, dondeCorazon) {
+  const estilo = estiloDe(nombre);
+  barra.classList.toggle("mate", !!estilo.mate);
+  if (!estilo.corazon) return;
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("class", "corazon");
+  svg.setAttribute("viewBox", "0 0 10 9");
+  svg.setAttribute("aria-hidden", "true");
+  const uso = document.createElementNS(ns, "use");
+  uso.setAttribute("href", "#i-corazon");
+  svg.append(uso);
+  dondeCorazon.append(svg);
+}
+
+// Foto de perfil de cada participante: Fernando y Juani tienen su duende;
+// todos los demás, el sombrero de duende.
+const FOTOS = {
+  Fernando: "../img/duende-hombre.jpg",
+  Juani: "../img/duende-mujer.jpg",
+};
+function fotoDe(nombre) {
+  return FOTOS[nombre] || "../img/sombrero.jpg";
+}
+
+// ---------- Comunicación con el Apps Script ----------
+// Lo público va por GET; lo del admin va por POST (así la contraseña no viaja en la dirección).
+async function api(params, porPost = false) {
+  if (MODO_DEMO) return apiDemo(params);
+  const resp = porPost
+    ? await fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(params),
+      })
+    : await fetch(SCRIPT_URL + "?" + new URLSearchParams(params));
+  if (!resp.ok) throw new Error("El servidor respondió " + resp.status);
+  return resp.json();
+}
+
+// Simulación para probar sin Apps Script (queda guardada en este navegador).
+const CLAVE_DEMO = "amigo-invisible-demo-datos";
+const demo = (() => {
+  const base = { nombres: ["Fernando", "Juani", "Flor", "Alejandra", "Beti", "Nacho", "Daniela", "Ezequiel", "Caro", "Charli"], asignaciones: null, sorteados: [], ids: {} };
+  if (!MODO_DEMO) return base;
+  try {
+    const guardado = JSON.parse(localStorage.getItem(CLAVE_DEMO)) || {};
+    // Si cambiaron los nombres de prueba, arranca de cero.
+    if (JSON.stringify(guardado.nombres) !== JSON.stringify(base.nombres)) return base;
+    return Object.assign(base, guardado);
+  } catch (e) { return base; }
+})();
+function guardarDemo() {
+  try { localStorage.setItem(CLAVE_DEMO, JSON.stringify(demo)); } catch (e) { /* ignorar */ }
+}
+function demoAsignaciones() {
+  if (!demo.asignaciones) {
+    const s = [...demo.nombres].sort(() => Math.random() - 0.5);
+    demo.asignaciones = {};
+    s.forEach((n, i) => { demo.asignaciones[n] = s[(i + 1) % s.length]; });
+    demo.sorteados = [];
+  }
+  return demo.asignaciones;
+}
+async function apiDemo(params) {
+  await new Promise(r => setTimeout(r, 800));
+  const n = params.nombre;
+  if (params.accion === "participantes") {
+    const res = { ok: true, participantes: demo.nombres };
+    if (n) res.vigente = demo.sorteados.includes(n) && (!demo.ids[n] || demo.ids[n] === params.id);
+    return res;
+  }
+  if (params.accion === "sortear") {
+    const asig = demoAsignaciones();
+    if (demo.sorteados.includes(n)) return { ok: true, yaSorteo: true };
+    // Como el Apps Script: se decide recién ahora, mezclando entre los que no sortearon.
+    const libres = demo.nombres.filter(o => !demo.sorteados.includes(o));
+    const destinos = libres.map(o => asig[o]);
+    for (let i = 0; i < 500; i++) {
+      const m = [...destinos].sort(() => Math.random() - 0.5);
+      if (libres.every((o, k) => m[k] !== o)) { libres.forEach((o, k) => { asig[o] = m[k]; }); break; }
+    }
+    demo.sorteados.push(n);
+    demo.ids[n] = String(Math.random()).slice(2);
+    guardarDemo();
+    console.log(`[demo] Mail al organizador: "${n} ya hizo su sorteo (${demo.sorteados.length} de ${demo.nombres.length})"`);
+    return { ok: true, yaSorteo: false, teToca: asig[n], id: demo.ids[n] };
+  }
+  if (String(params.accion).startsWith("admin")) return adminDemo(params); // está en admin.js
+  return { ok: false, error: "Acción desconocida" };
+}
+
+// ---------- Guardado local del resultado ----------
+function leerResultado() {
+  try { return JSON.parse(localStorage.getItem(CLAVE_RESULTADO)); } catch (e) { return null; }
+}
+function guardarResultado(nombre, teToca, id) {
+  try { localStorage.setItem(CLAVE_RESULTADO, JSON.stringify({ nombre, teToca, id })); } catch (e) { /* ignorar */ }
+}
+function borrarResultado() {
+  try { localStorage.removeItem(CLAVE_RESULTADO); } catch (e) { /* ignorar */ }
+}
+
+// ---------- UI ----------
+function mostrarMensaje(texto, esError = false) {
+  mensaje.textContent = texto;
+  mensaje.classList.toggle("error", esError);
+}
+
+function aleatorio(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function mostrarGanador(nombre) {
+  nombreActual.textContent = nombre;
+  ruleta.classList.remove("girando");
+  void ruleta.offsetWidth; // reinicia la animación
+  ruleta.classList.add("ganador");
+}
+
+// Hace girar los nombres hasta que se llame a parar(nombreFinal).
+// Gira rápido mientras espera la respuesta y después frena de a poco.
+function girar(nombresGiro) {
+  let delay = 50;
+  let final = null;
+  let frenando = false;
+  let cancelado = false;
+  let anterior = null;
+  let resolver;
+  const inicio = Date.now();
+  const terminado = new Promise(r => (resolver = r));
+
+  ruleta.classList.remove("ganador");
+  ruleta.classList.add("girando");
+
+  function tick() {
+    if (cancelado) return;
+    if (frenando && delay >= 450) {
+      mostrarGanador(final);
+      resolver();
+      return;
+    }
+    let n = aleatorio(nombresGiro);
+    if (nombresGiro.length > 1) while (n === anterior) n = aleatorio(nombresGiro);
+    anterior = n;
+    nombreActual.textContent = n;
+
+    if (frenando) delay *= 1.12;
+    else if (final !== null && Date.now() - inicio > 1500) frenando = true;
+    setTimeout(tick, delay);
+  }
+  tick();
+
+  return {
+    parar(nombreFinal) { final = nombreFinal; return terminado; },
+    cancelar(texto) {
+      cancelado = true;
+      ruleta.classList.remove("girando");
+      nombreActual.textContent = texto;
+    },
+  };
+}
+
+function bloquear() {
+  cerrarLista();
+  selectorBoton.disabled = true;
+  btnSortear.disabled = true;
+}
+
+// ---------- Menú de nombres ----------
+function armarLista() {
+  selectorLista.innerHTML = "";
+  participantes.forEach((n, i) => {
+    const li = document.createElement("li");
+    li.setAttribute("role", "presentation");
+    const op = document.createElement("button");
+    op.type = "button";
+    op.className = "opcion";
+    op.setAttribute("role", "option");
+    op.setAttribute("aria-selected", "false");
+    op.dataset.nombre = n;
+    op.style.setProperty("--c", colorDe(n));
+    op.style.setProperty("--i", i);
+    const foto = document.createElement("img");
+    foto.className = "avatar";
+    foto.alt = "";
+    foto.width = foto.height = 42;
+    foto.src = fotoDe(n);
+    const texto = document.createElement("span");
+    texto.textContent = n;
+    op.append(foto, texto);
+    decorarNombre(op, n, op);
+    op.addEventListener("click", () => elegir(n, true));
+    li.appendChild(op);
+    selectorLista.appendChild(li);
+  });
+}
+
+function opciones() {
+  return [...selectorLista.querySelectorAll(".opcion")];
+}
+
+function abrirLista() {
+  if (selectorBoton.disabled) return;
+  selectorLista.hidden = false;
+  selector.classList.add("abierto");
+  selectorBoton.setAttribute("aria-expanded", "true");
+  // Reinicia la animación de entrada de cada nombre
+  opciones().forEach(op => { op.style.animation = "none"; void op.offsetWidth; op.style.animation = ""; });
+  const actual = opciones().find(op => op.dataset.nombre === quienElegido) || opciones()[0];
+  if (actual) actual.focus({ preventScroll: true });
+}
+
+function cerrarLista(volverAlBoton = false) {
+  if (selectorLista.hidden) return;
+  selectorLista.hidden = true;
+  selector.classList.remove("abierto");
+  selectorBoton.setAttribute("aria-expanded", "false");
+  if (volverAlBoton) selectorBoton.focus();
+}
+
+function elegir(nombre, desdeLista = false) {
+  quienElegido = nombre;
+  const color = colorDe(nombre);
+  selectorTexto.textContent = nombre;
+  selectorAvatar.src = fotoDe(nombre);
+  selectorAvatar.classList.remove("oculto");
+  selectorBoton.style.setProperty("--c", color);
+  selectorBoton.classList.add("elegido");
+  decorarNombre(selectorBoton, nombre, selectorTexto);
+  opciones().forEach(op => op.setAttribute("aria-selected", String(op.dataset.nombre === nombre)));
+  if (mensaje.classList.contains("error")) mostrarMensaje("");
+  cerrarLista(desdeLista);
+}
+
+selectorBoton.addEventListener("click", () => {
+  if (selectorLista.hidden) abrirLista();
+  else cerrarLista();
+});
+
+selectorBoton.addEventListener("keydown", e => {
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    abrirLista();
+  }
+});
+
+selectorLista.addEventListener("keydown", e => {
+  const ops = opciones();
+  const i = ops.indexOf(document.activeElement);
+  if (e.key === "ArrowDown") { e.preventDefault(); ops[(i + 1) % ops.length].focus(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); ops[(i - 1 + ops.length) % ops.length].focus(); }
+  else if (e.key === "Home") { e.preventDefault(); ops[0].focus(); }
+  else if (e.key === "End") { e.preventDefault(); ops[ops.length - 1].focus(); }
+  else if (e.key === "Escape" || e.key === "Tab") { cerrarLista(e.key === "Escape"); }
+});
+
+document.addEventListener("click", e => {
+  if (!selector.contains(e.target)) cerrarLista();
+});
+
+// ---------- Sorteo ----------
+async function sortear() {
+  const quien = quienElegido;
+  if (!quien) {
+    mostrarMensaje("Primero elegí tu nombre 👆", true);
+    return;
+  }
+  bloquear();
+  mostrarMensaje("");
+
+  const otros = participantes.filter(n => n !== quien);
+  const giro = girar(otros.length ? otros : participantes);
+
+  try {
+    const res = await api({ accion: "sortear", nombre: quien });
+    if (!res.ok) throw new Error(res.error || "Algo salió mal");
+
+    if (res.yaSorteo) {
+      giro.cancelar("🤔");
+      mostrarMensaje(`${quien}, vos ya hiciste tu sorteo. Si no fuiste vos, avisale al organizador.`, true);
+      return;
+    }
+
+    await giro.parar(res.teToca);
+    guardarResultado(quien, res.teToca, res.id);
+    mostrarMensaje(`¡${quien}, te toca regalarle a ${res.teToca}! 🤫 No le digas a nadie.`);
+    lanzarConfeti();
+  } catch (err) {
+    giro.cancelar("😕");
+    mostrarMensaje("No se pudo sortear: " + err.message + ". Probá de nuevo.", true);
+    selectorBoton.disabled = false;
+    btnSortear.disabled = false;
+  }
+}
+
+// ---------- Efectos ----------
+function lanzarConfeti() {
+  const colores = ["#c8102e", "#1e7a46", "#f4c542", "#ffffff"];
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement("div");
+    c.className = "confeti";
+    c.style.left = Math.random() * 100 + "vw";
+    c.style.background = aleatorio(colores);
+    c.style.animationDelay = Math.random() * 0.6 + "s";
+    c.style.animationDuration = 2 + Math.random() * 1.5 + "s";
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 4500);
+  }
+}
+
+function crearNieve() {
+  const fondo = document.getElementById("fondo");
+  for (let i = 0; i < 40; i++) {
+    const copo = document.createElement("span");
+    copo.className = "copo";
+    copo.textContent = "❄";
+    copo.style.left = Math.random() * 100 + "vw";
+    copo.style.fontSize = 8 + Math.random() * 14 + "px";
+    copo.style.animationDuration = 6 + Math.random() * 10 + "s";
+    copo.style.animationDelay = -Math.random() * 16 + "s";
+    fondo.appendChild(copo);
+  }
+}
+
+// ---------- Inicio ----------
+async function iniciar() {
+  crearNieve();
+  avisoDemo.classList.toggle("oculto", !MODO_DEMO);
+
+  // Si este dispositivo ya sorteó, mostrar el resultado directamente
+  // (salvo que el admin lo haya reseteado: eso lo responde el Apps Script).
+  let previo = leerResultado();
+  const pedido = { accion: "participantes" };
+  if (previo && previo.nombre) {
+    pedido.nombre = previo.nombre;
+    pedido.id = previo.id || "";
+  }
+
+  try {
+    const res = await api(pedido);
+    if (!res.ok) throw new Error(res.error);
+    participantes = res.participantes;
+    if (previo && res.vigente === false && participantes.includes(previo.nombre)) {
+      borrarResultado(); // en silencio: el participante no se entera de lo que hizo el admin
+      previo = null;
+    }
+  } catch (err) {
+    selectorTexto.textContent = "No se pudo cargar";
+    mostrarMensaje("No se pudo conectar con el sorteo. Recargá la página.", true);
+    return;
+  }
+
+  selectorTexto.textContent = "Elegí tu nombre";
+  armarLista();
+
+  if (previo && participantes.includes(previo.nombre)) {
+    elegir(previo.nombre);
+    mostrarGanador(previo.teToca);
+    mostrarMensaje(`${previo.nombre}, ya sorteaste: te toca ${previo.teToca} 🎁`);
+    bloquear();
+    return;
+  }
+
+  selectorBoton.disabled = false;
+  btnSortear.disabled = false;
+}
+
+btnSortear.addEventListener("click", sortear);
+iniciar();
+</script>
+  <script>// =====================================================
+// ADMIN
+// Botón arriba a la derecha. Abre una ventana a pantalla completa (estilo consola) para:
+//   - ver quién sorteó y a quién le regala cada uno,
+//   - resetear a alguien para que vuelva a sortear (si otro tocó su nombre sin querer),
+//   - crear o cambiar el usuario y la contraseña con un código que llega al Gmail
+//     del organizador y vence en 2 minutos.
+// Todo lo controla el Apps Script: acá no hay ninguna contraseña guardada.
+// Usa api(), colorDe(), fotoDe(), aleatorio(), demo, demoAsignaciones() y guardarDemo() de script.js.
+// =====================================================
+(function () {
+  const CLAVE_SESION = MODO_DEMO ? "amigo-invisible-demo-admin" : "amigo-invisible-admin";
+  const VUELTA = 2 * Math.PI * 52; // largo del círculo de los anillos (r = 52)
+
+  // Código de acceso de 4 números que se pide antes del login. No está escrito tal cual:
+  // se guarda su huella SHA-256 ("amigo-invisible|" + código). Es solo un candado para
+  // que los curiosos no anden probando; la seguridad de verdad es la contraseña.
+  const HUELLA_PIN = "d0e83645157fb37faba4fb1387ec788598b314471630adf7ce58dd2acca18c77";
+  const CLAVE_PIN_ESPERA = "amigo-invisible-pin-espera";
+  const MAX_FALLOS_PIN = 5;
+
+  const $ = id => document.getElementById(id);
+  const btnAdmin = $("btn-admin");
+  const admin = $("admin");
+  const vistas = {
+    pin: $("admin-pin"),
+    login: $("admin-login"),
+    mail: $("admin-mail"),
+    codigo: $("admin-codigo"),
+    panel: $("admin-panel"),
+  };
+  const titulo = $("admin-titulo");
+  const marcaUso = $("admin-marca-uso");
+
+  // Entrar
+  const usuario = $("admin-usuario");
+  const clave = $("admin-clave");
+  const btnEntrar = $("admin-entrar");
+  const msjLogin = $("admin-login-msj");
+  // Pedir código
+  const mail = $("admin-mail-input");
+  const btnMandar = $("admin-mail-enviar");
+  const msjMail = $("admin-mail-msj");
+  // Código + contraseña nueva
+  const reloj = $("admin-reloj");
+  const relojArco = $("admin-reloj-arco");
+  const relojTexto = $("admin-reloj-texto");
+  const enviado = $("admin-enviado");
+  const codigo = $("admin-codigo-input");
+  const nuevoUsuario = $("admin-nuevo-usuario");
+  const nuevaClave = $("admin-nueva-clave");
+  const nuevaClave2 = $("admin-nueva-clave2");
+  const btnGuardar = $("admin-guardar");
+  const btnReenviar = $("admin-reenviar");
+  const msjCodigo = $("admin-codigo-msj");
+  // Panel
+  const anilloArco = $("admin-anillo-arco");
+  const txtCuantos = $("admin-cuantos");
+  const txtTotal = $("admin-total");
+  const resumen = $("admin-resumen");
+  const faltan = $("admin-faltan");
+  const btnVer = $("admin-ver");
+  const lista = $("admin-lista");
+  const msjPanel = $("admin-msj");
+
+  let token = leerToken();
+  let estado = null;
+  let verResultados = false;
+  let confirmando = "";
+  let trabajando = false;
+  let venceCodigo = 0;
+  let duracionCodigo = 120000;
+  let intervalo = null;
+
+  if (MODO_DEMO) $("admin-ayuda-demo").hidden = false;
+
+  // ---------- Sesión (solo dura mientras la pestaña está abierta) ----------
+  function leerToken() {
+    try { return sessionStorage.getItem(CLAVE_SESION) || ""; } catch (e) { return ""; }
+  }
+  function guardarToken(t) {
+    token = t;
+    try {
+      if (t) sessionStorage.setItem(CLAVE_SESION, t);
+      else sessionStorage.removeItem(CLAVE_SESION);
+    } catch (e) { /* ignorar */ }
+  }
+
+  // ---------- Utilidades ----------
+  function icono(nombre) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("class", "ico");
+    svg.setAttribute("aria-hidden", "true");
+    const uso = document.createElementNS(ns, "use");
+    uso.setAttribute("href", "#i-" + nombre);
+    svg.append(uso);
+    return svg;
+  }
+
+  function boton(nombreIcono, texto, clase, alTocar) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = clase + " luz";
+    const t = document.createElement("span");
+    t.textContent = texto;
+    b.append(icono(nombreIcono), t);
+    b.disabled = trabajando;
+    b.addEventListener("click", alTocar);
+    return b;
+  }
+
+  function escribir(el, texto, esError = false) {
+    el.textContent = texto;
+    el.classList.toggle("error", esError);
+    if (el === msjPanel && texto) {
+      el.style.animation = "none";
+      void el.offsetWidth;
+      el.style.animation = "";
+    }
+  }
+
+  const TITULOS = {
+    pin: ["Código de acceso", "lock"],
+    login: ["Entrar como admin", "shield"],
+    mail: ["Crear o cambiar contraseña", "key"],
+    codigo: ["Crear o cambiar contraseña", "key"],
+    panel: ["Panel de admin", "grid"],
+  };
+
+  function mostrar(vista, foco) {
+    Object.entries(vistas).forEach(([nombre, el]) => { el.hidden = nombre !== vista; });
+    titulo.textContent = TITULOS[vista][0];
+    marcaUso.setAttribute("href", "#i-" + TITULOS[vista][1]);
+    if (vista !== "codigo") pararReloj();
+    if (foco) foco.focus();
+  }
+
+  // Llama al Apps Script por POST. Si la sesión se venció, vuelve a pedir la contraseña.
+  async function pedir(datos) {
+    const res = await api(datos, true);
+    if (!res.ok && res.sesionVencida) {
+      guardarToken("");
+      estado = null;
+      mostrar("login", usuario);
+      escribir(msjLogin, res.error, true);
+      return null;
+    }
+    return res;
+  }
+
+  // ---------- Abrir y cerrar ----------
+  // Si ya hay una sesión de admin abierta va directo al panel; si no, primero pide el código.
+  function abrir() {
+    if (typeof admin.showModal === "function") admin.showModal();
+    else admin.setAttribute("open", "");
+    if (token) cargarPanel();
+    else mostrarPin();
+  }
+  function cerrar() {
+    confirmando = "";
+    pararReloj();
+    if (typeof admin.close === "function") admin.close();
+    else admin.removeAttribute("open");
+  }
+  btnAdmin.addEventListener("click", abrir);
+  $("admin-cerrar").addEventListener("click", cerrar);
+  admin.addEventListener("close", pararReloj);
+
+  // ---------- Código de acceso (4 números) ----------
+  const puntos = [...$("admin-pin-puntos").children];
+  const cajaPuntos = $("admin-pin-puntos");
+  const teclas = [...vistas.pin.querySelectorAll(".admin-tecla")];
+  const msjPin = $("admin-pin-msj");
+  let pin = "";
+  let fallosPin = 0;
+  let revisando = false;
+  let relojEspera = null;
+
+  function pintarPuntos(estadoPuntos = "") {
+    puntos.forEach((p, i) => p.classList.toggle("lleno", i < pin.length));
+    cajaPuntos.className = "admin-pin-puntos" + (estadoPuntos ? " " + estadoPuntos : "");
+  }
+
+  function esperaPin() {
+    try { return Math.max(0, Number(localStorage.getItem(CLAVE_PIN_ESPERA) || 0) - Date.now()); } catch (e) { return 0; }
+  }
+
+  function bloquearTeclado(bloquear) {
+    teclas.forEach(t => { t.disabled = bloquear; });
+  }
+
+  function revisarEspera() {
+    clearInterval(relojEspera);
+    const tic = () => {
+      const ms = esperaPin();
+      if (!ms) {
+        clearInterval(relojEspera);
+        bloquearTeclado(false);
+        if (msjPin.classList.contains("error")) escribir(msjPin, "");
+        return;
+      }
+      bloquearTeclado(true);
+      escribir(msjPin, `Demasiados intentos. Esperá ${Math.ceil(ms / 1000)} segundos.`, true);
+    };
+    tic();
+    relojEspera = setInterval(tic, 500);
+  }
+
+  function mostrarPin() {
+    pin = "";
+    revisando = false;
+    pintarPuntos();
+    escribir(msjPin, "");
+    mostrar("pin");
+    revisarEspera();
+    const primera = teclas.find(t => !t.disabled);
+    if (primera) primera.focus({ preventScroll: true });
+  }
+
+  async function huella(texto) {
+    const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
+    return [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function revisarPin() {
+    revisando = true;
+    let ok = false;
+    try { ok = (await huella("amigo-invisible|" + pin)) === HUELLA_PIN; } catch (e) { ok = false; }
+    if (ok) {
+      fallosPin = 0;
+      pintarPuntos("bien");
+      setTimeout(() => {
+        revisando = false;
+        escribir(msjLogin, "");
+        mostrar("login", usuario);
+      }, 350);
+      return;
+    }
+    fallosPin++;
+    pintarPuntos("mal");
+    escribir(msjPin, "Código incorrecto.", true);
+    if (fallosPin >= MAX_FALLOS_PIN) {
+      fallosPin = 0;
+      try { localStorage.setItem(CLAVE_PIN_ESPERA, String(Date.now() + 60000)); } catch (e) { /* ignorar */ }
+    }
+    setTimeout(() => {
+      pin = "";
+      revisando = false;
+      pintarPuntos();
+      revisarEspera();
+    }, 600);
+  }
+
+  function teclear(n) {
+    if (revisando || esperaPin()) return;
+    if (pin.length >= 4) return;
+    if (msjPin.classList.contains("error")) escribir(msjPin, "");
+    pin += n;
+    pintarPuntos();
+    if (pin.length === 4) revisarPin();
+  }
+  function borrar() {
+    if (revisando || !pin) return;
+    pin = pin.slice(0, -1);
+    pintarPuntos();
+  }
+
+  teclas.forEach(t => t.addEventListener("click", () => {
+    if (t.dataset.n !== undefined) teclear(t.dataset.n);
+    else borrar();
+  }));
+  // También se puede escribir con el teclado de la compu.
+  admin.addEventListener("keydown", e => {
+    if (vistas.pin.hidden) return;
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); teclear(e.key); }
+    else if (e.key === "Backspace") { e.preventDefault(); borrar(); }
+  });
+
+  // ---------- Entrar ----------
+  vistas.login.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!MODO_DEMO && (!usuario.value.trim() || !clave.value)) {
+      escribir(msjLogin, "Escribí tu usuario y tu contraseña.", true);
+      return;
+    }
+    btnEntrar.disabled = true;
+    escribir(msjLogin, "Entrando...");
+    try {
+      const res = await api({ accion: "adminEntrar", usuario: usuario.value, clave: clave.value }, true);
+      if (!res.ok) throw new Error(res.error || "No se pudo entrar");
+      clave.value = "";
+      guardarToken(res.token);
+      escribir(msjLogin, "");
+      await cargarPanel();
+    } catch (err) {
+      escribir(msjLogin, err.message, true);
+      clave.select();
+    } finally {
+      btnEntrar.disabled = false;
+    }
+  });
+
+  $("admin-ir-recuperar").addEventListener("click", () => {
+    escribir(msjMail, "");
+    mostrar("mail", mail);
+  });
+  document.querySelectorAll(".admin-volver").forEach(b => b.addEventListener("click", () => {
+    escribir(msjLogin, "");
+    mostrar("login", usuario);
+  }));
+
+  // ---------- Código por mail ----------
+  async function mandarCodigo(msj, btn) {
+    if (!mail.value.includes("@")) {
+      mostrar("mail", mail);
+      escribir(msjMail, "Escribí tu Gmail completo (con @gmail.com).", true);
+      return false;
+    }
+    btn.disabled = true;
+    escribir(msj, "Mandando el código...");
+    try {
+      const res = await api({ accion: "adminPedirCodigo", mail: mail.value }, true);
+      if (!res.ok) throw new Error(res.error || "No se pudo mandar el código");
+      duracionCodigo = res.vence * 1000;
+      venceCodigo = Date.now() + duracionCodigo;
+      return res;
+    } catch (err) {
+      escribir(msj, err.message, true);
+      return false;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  vistas.mail.addEventListener("submit", async e => {
+    e.preventDefault();
+    const res = await mandarCodigo(msjMail, btnMandar);
+    if (!res) return;
+    codigo.value = "";
+    mostrar("codigo", codigo);
+    enviado.textContent = res.codigoDemo
+      ? `Modo prueba: no se manda mail, el código es ${res.codigoDemo}`
+      : "Te mandé un código de 6 números a tu Gmail. Si no lo ves, fijate en Spam.";
+    escribir(msjCodigo, "");
+    arrancarReloj();
+  });
+
+  btnReenviar.addEventListener("click", async () => {
+    const res = await mandarCodigo(msjCodigo, btnReenviar);
+    if (!res) return;
+    codigo.value = "";
+    codigo.focus();
+    enviado.textContent = res.codigoDemo
+      ? `Modo prueba: el código nuevo es ${res.codigoDemo}`
+      : "Te mandé un código nuevo. Usá el último que te llegó.";
+    escribir(msjCodigo, "");
+    arrancarReloj();
+  });
+
+  // Cuenta regresiva con anillo: azul, amarillo los últimos 20 segundos, rojo al vencer.
+  function arrancarReloj() {
+    pararReloj();
+    btnGuardar.disabled = false;
+    reloj.classList.remove("vencido", "urgente");
+    const tic = () => {
+      const restanMs = Math.max(0, venceCodigo - Date.now());
+      const quedan = Math.ceil(restanMs / 1000);
+      relojArco.style.strokeDashoffset = String(VUELTA * (1 - restanMs / duracionCodigo));
+      relojArco.style.opacity = restanMs ? "1" : "0";
+      if (quedan === 0) {
+        relojTexto.textContent = "0:00";
+        reloj.classList.add("vencido");
+        btnGuardar.disabled = true;
+        escribir(msjCodigo, "El código venció. Pedí otro.", true);
+        pararReloj();
+        return;
+      }
+      reloj.classList.toggle("urgente", quedan <= 20);
+      relojTexto.textContent = `${Math.floor(quedan / 60)}:${String(quedan % 60).padStart(2, "0")}`;
+    };
+    tic();
+    intervalo = setInterval(tic, 100);
+  }
+  function pararReloj() {
+    if (intervalo) clearInterval(intervalo);
+    intervalo = null;
+  }
+
+  vistas.codigo.addEventListener("submit", async e => {
+    e.preventDefault();
+    const cod = codigo.value.replace(/\s/g, "");
+    let error = "";
+    if (!/^\d{6}$/.test(cod)) error = "El código tiene 6 números.";
+    else if (!nuevoUsuario.value.trim()) error = "Elegí un usuario.";
+    else if (nuevaClave.value.length < 6) error = "La contraseña tiene que tener al menos 6 caracteres.";
+    else if (nuevaClave.value !== nuevaClave2.value) error = "Las dos contraseñas no son iguales.";
+    if (error) {
+      escribir(msjCodigo, error, true);
+      return;
+    }
+    btnGuardar.disabled = true;
+    escribir(msjCodigo, "Guardando...");
+    try {
+      const res = await api({
+        accion: "adminCambiarClave",
+        codigo: cod,
+        usuario: nuevoUsuario.value,
+        clave: nuevaClave.value,
+      }, true);
+      if (!res.ok) {
+        if (res.vencido) {
+          venceCodigo = 0;
+          arrancarReloj();
+        }
+        throw new Error(res.error || "No se pudo guardar");
+      }
+      nuevaClave.value = nuevaClave2.value = codigo.value = "";
+      usuario.value = nuevoUsuario.value.trim();
+      guardarToken(res.token);
+      await cargarPanel("Listo, guardé tu usuario y contraseña. La próxima vez entrá con esos.");
+    } catch (err) {
+      escribir(msjCodigo, err.message, true);
+    } finally {
+      if (venceCodigo > Date.now()) btnGuardar.disabled = false;
+    }
+  });
+
+  // ---------- Panel ----------
+  async function cargarPanel(texto = "") {
+    const primeraVez = !estado;
+    mostrar("panel");
+    if (primeraVez) {
+      resumen.textContent = "Cargando...";
+      faltan.textContent = "";
+      lista.innerHTML = "";
+    }
+    escribir(msjPanel, texto || (primeraVez ? "" : "Actualizando..."));
+    try {
+      const res = await pedir({ accion: "adminEstado", token });
+      if (!res) return;
+      if (!res.ok) throw new Error(res.error || "Algo salió mal");
+      estado = res;
+      escribir(msjPanel, texto);
+      pintar(true);
+    } catch (err) {
+      escribir(msjPanel, "No se pudo cargar: " + err.message, true);
+    }
+  }
+
+  function pintar(animar = false) {
+    const { participantes: nombres, sorteados, asignaciones } = estado;
+    const cuantos = nombres.filter(n => sorteados.includes(n)).length;
+    const total = nombres.length;
+    txtCuantos.textContent = cuantos;
+    txtTotal.textContent = "de " + total;
+    anilloArco.style.strokeDashoffset = String(VUELTA * (1 - (total ? cuantos / total : 0)));
+    anilloArco.style.opacity = cuantos ? "1" : "0";
+    resumen.textContent = cuantos === total ? "¡Ya sortearon todos!" : `Ya sortearon ${cuantos} de ${total}`;
+    faltan.textContent = cuantos === total ? "No falta nadie 🎉" : `Faltan ${total - cuantos}`;
+
+    const t = document.createElement("span");
+    t.textContent = verResultados ? "Ocultar resultados" : "Ver a quién le tocó";
+    btnVer.replaceChildren(icono(verResultados ? "eye-off" : "eye"), t);
+    btnVer.setAttribute("aria-pressed", String(verResultados));
+
+    // Si a alguien le tocó una persona que no puede tocarle (regla del Apps Script) y ya lo vio.
+    $("admin-alerta").textContent = (estado.conflictos || []).map(c => c.sorteo
+      ? `⚠ ${c.de} ya sorteó y le tocó ${c.a}, que no está permitido. Tocá «Resetear» en ${c.de} para cambiarlo.`
+      : `⚠ A ${c.de} le toca ${c.a}, que no está permitido, y no se pudo corregir solo.`).join(" ");
+
+    lista.classList.toggle("animar", animar);
+    lista.innerHTML = "";
+    nombres.forEach((n, i) => {
+      const sorteo = sorteados.includes(n);
+      const li = document.createElement("li");
+      li.className = "admin-fila";
+      li.style.setProperty("--c", colorDe(n));
+      li.style.setProperty("--i", i);
+
+      const foto = document.createElement("img");
+      foto.className = "admin-foto";
+      foto.alt = "";
+      foto.width = foto.height = 48;
+      foto.src = fotoDe(n);
+
+      const info = document.createElement("div");
+      info.className = "admin-info";
+      const nombre = document.createElement("strong");
+      nombre.textContent = n;
+      const chip = document.createElement("span");
+      chip.className = "chip " + (sorteo ? "chip-ok" : "chip-pend");
+      chip.append(icono(sorteo ? "check" : "clock"), sorteo ? "Ya sorteó" : "Falta sortear");
+      info.append(nombre, chip);
+      decorarNombre(li, n, nombre);
+      if (verResultados && sorteo) {
+        const toca = document.createElement("span");
+        toca.className = "admin-toca";
+        const txt = document.createElement("span");
+        txt.textContent = "Le regala a";
+        const b = document.createElement("b");
+        b.textContent = asignaciones[n] || "—";
+        toca.append(icono("gift"), txt, b);
+        info.append(toca);
+      } else if (verResultados) {
+        const toca = document.createElement("span");
+        toca.className = "admin-toca";
+        const txt = document.createElement("span");
+        txt.textContent = "Se decide cuando sortee";
+        toca.append(icono("clock"), txt);
+        info.append(toca);
+      }
+      li.append(foto, info);
+
+      if (sorteo && confirmando !== n) {
+        const r = boton("rotate", "Resetear", "admin-resetear", () => {
+          confirmando = n;
+          escribir(msjPanel, "");
+          pintar();
+          const si = lista.querySelector(".admin-si");
+          if (si) si.focus();
+        });
+        r.setAttribute("aria-label", "Resetear a " + n);
+        li.append(r);
+      }
+
+      if (sorteo && confirmando === n) {
+        const caja = document.createElement("div");
+        caja.className = "admin-confirmar";
+        const p = document.createElement("p");
+        p.className = "admin-confirmar-texto";
+        const txt = document.createElement("span");
+        txt.textContent = `¿Resetear a ${n}? Va a poder sortear de nuevo. Si queda alguien sin sortear, ` +
+          `le cambio a quién le toca, así el que tocó sin querer no sabe el resultado.`;
+        p.append(icono("alert"), txt);
+        const botones = document.createElement("div");
+        botones.className = "admin-confirmar-botones";
+        botones.append(
+          boton("rotate", "Sí, resetear", "admin-btn admin-btn-peligro admin-si", () => resetear(n)),
+          boton("x", "Cancelar", "admin-btn admin-btn-secundario admin-no", () => { confirmando = ""; pintar(); }),
+        );
+        caja.append(p, botones);
+        li.append(caja);
+      }
+      lista.append(li);
+    });
+  }
+
+  async function resetear(nombre) {
+    trabajando = true;
+    pintar();
+    escribir(msjPanel, "Reseteando a " + nombre + "...");
+    try {
+      const res = await pedir({ accion: "adminResetear", token, nombre });
+      if (!res) return;
+      if (!res.ok) throw new Error(res.error || "Algo salió mal");
+      confirmando = "";
+      trabajando = false;
+      await cargarPanel(res.cambio
+        ? `Listo: ${nombre} puede sortear de nuevo y le cambié a quién le toca. ` +
+          `Si alguien tocó su nombre sin querer, que recargue la página y elija el suyo.`
+        : `Listo: ${nombre} puede sortear de nuevo. Le va a tocar la misma persona ` +
+          `(no se podía cambiar sin tocar a los que ya sortearon).`);
+    } catch (err) {
+      escribir(msjPanel, "No se pudo resetear: " + err.message, true);
+    } finally {
+      trabajando = false;
+      if (estado && !vistas.panel.hidden) pintar();
+    }
+  }
+
+  btnVer.addEventListener("click", () => {
+    verResultados = !verResultados;
+    pintar();
+  });
+
+  $("admin-actualizar").addEventListener("click", () => {
+    confirmando = "";
+    cargarPanel();
+  });
+
+  $("admin-salir").addEventListener("click", () => {
+    if (token) api({ accion: "adminSalir", token }, true).catch(() => {});
+    guardarToken("");
+    estado = null;
+    verResultados = false;
+    confirmando = "";
+    lista.innerHTML = "";
+    mostrar("login", usuario);
+    escribir(msjLogin, "Cerraste la sesión de admin.");
+  });
+
+  // ---------- Modo prueba: imita al Apps Script ----------
+  // En la prueba sirve cualquier usuario, contraseña y mail, y el código se muestra en pantalla.
+  let codigoDemo = null;
+  window.adminDemo = function (p) {
+    if (p.accion === "adminEntrar") return { ok: true, token: "demo" };
+    if (p.accion === "adminSalir") return { ok: true };
+    if (p.accion === "adminPedirCodigo") {
+      codigoDemo = { codigo: String(Math.floor(100000 + Math.random() * 900000)), vence: Date.now() + 120000 };
+      return { ok: true, vence: 120, codigoDemo: codigoDemo.codigo };
+    }
+    if (p.accion === "adminCambiarClave") {
+      if (!codigoDemo || Date.now() > codigoDemo.vence) {
+        return { ok: false, vencido: true, error: "El código venció. Pedí uno nuevo." };
+      }
+      if (p.codigo !== codigoDemo.codigo) return { ok: false, error: "Ese código no es. Fijate bien el que te llegó al mail." };
+      codigoDemo = null;
+      return { ok: true, token: "demo" };
+    }
+    if (p.accion === "adminEstado") {
+      const asig = demoAsignaciones();
+      guardarDemo();
+      const vistos = {};
+      demo.sorteados.forEach(n => { vistos[n] = asig[n]; });
+      return { ok: true, participantes: demo.nombres, sorteados: demo.sorteados, asignaciones: vistos };
+    }
+    if (p.accion === "adminResetear") {
+      const n = p.nombre;
+      const asig = demoAsignaciones();
+      if (!demo.sorteados.includes(n)) return { ok: false, error: n + " todavía no sorteó" };
+      demo.sorteados = demo.sorteados.filter(x => x !== n);
+      delete demo.ids[n];
+      // Igual que el Apps Script: mezcla entre él y los que todavía no sortearon.
+      const libres = demo.nombres.filter(o => asig[o] && !demo.sorteados.includes(o));
+      const destinos = libres.map(o => asig[o]);
+      let cambio = false;
+      for (let intento = 0; intento < 500 && !cambio; intento++) {
+        const m = [...destinos].sort(() => Math.random() - 0.5);
+        if (m[libres.indexOf(n)] !== asig[n] && libres.every((o, i) => m[i] !== o)) {
+          libres.forEach((o, i) => { asig[o] = m[i]; });
+          cambio = true;
+        }
+      }
+      guardarDemo();
+      return { ok: true, cambio };
+    }
+    return { ok: false, error: "Acción desconocida" };
+  };
+})();
+</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>// =====================================================
+// MINI SANTA 3D (Three.js)
+// Un Santa petiso y cabezón que vive abajo de la tarjeta:
+//   mira la tarjeta → se da vuelta → salta de espaldas y se cuelga del borde →
+//   patalea → se resbala y se cae → al chocar el piso SE DESARMA en piezas →
+//   las piezas vuelven volando y se REARMA → festeja → baila «AY QUÉ LOCURA» → y vuelta a empezar.
+// Tocalo y se desarma en el momento (después se rearma, festeja y baila).
+// Si la tarjeta muestra el resultado del sorteo, no se cuelga para no taparlo:
+// directamente baila.
+// Si el navegador no soporta 3D, queda el Santa plano (SVG) de respaldo.
+// =====================================================
+(function () {
+  const contenedor = document.querySelector(".santa-baile");
+  const tarjeta = document.querySelector(".tarjeta-sorteo");
+  const ruleta = document.getElementById("ruleta");
+  if (!contenedor || !tarjeta || typeof THREE === "undefined") return;
+
+  // ¿Hay WebGL?
+  try {
+    const prueba = document.createElement("canvas");
+    if (!(prueba.getContext("webgl") || prueba.getContext("experimental-webgl"))) return;
+  } catch (e) { return; }
+
+  const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const PI = Math.PI;
+
+  // ---------- Escena ----------
+  const canvas = document.createElement("canvas");
+  canvas.className = "santa-3d";
+  canvas.setAttribute("aria-hidden", "true");
+  contenedor.appendChild(canvas);
+  contenedor.classList.add("con-3d");
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+  const escena = new THREE.Scene();
+  const camara = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
+  const PIXELES_POR_UNIDAD = 84;   // tamaño del Santa en pantalla
+
+  escena.add(new THREE.HemisphereLight(0xfff4e0, 0x203040, 0.65));
+  const sol = new THREE.DirectionalLight(0xffffff, 0.7);
+  sol.position.set(2, 4, 3);
+  escena.add(sol);
+  const relleno = new THREE.DirectionalLight(0xffe6f0, 0.25);
+  relleno.position.set(-2, 1, 3);
+  escena.add(relleno);
+
+  // ---------- Materiales ----------
+  const mat = c => new THREE.MeshToonMaterial({ color: c });
+  const rojo = mat(0xe01b34);
+  const rojoOscuro = mat(0xa8102a);
+  const blanco = mat(0xffffff);
+  const piel = mat(0xffcfae);
+  const negro = mat(0x1e1e24);
+  const dorado = mat(0xffc93c);
+  const naricita = mat(0xff9e86);
+  const rosa = new THREE.MeshToonMaterial({ color: 0xff8a9a, transparent: true, opacity: 0.7 });
+  const verde = mat(0x1e9a55);
+
+  const esfera = (r, m, seg = 24) => new THREE.Mesh(new THREE.SphereGeometry(r, seg, Math.round(seg * 0.75)), m);
+
+  // ---------- Sombra en el piso ----------
+  const sombraTex = (() => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    const g = c.getContext("2d");
+    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, "rgba(0,0,0,0.5)");
+    grad.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  const sombra = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.2, 1.2),
+    new THREE.MeshBasicMaterial({ map: sombraTex, transparent: true, depthWrite: false })
+  );
+  sombra.rotation.x = -PI / 2;
+  escena.add(sombra);
+
+  // ---------- Mini Santa ----------
+  // santa (posición) > colgador (pivote en las manos, para balancearse colgado) > cuerpo (origen en los pies)
+  const BRAZO_SUP = 0.21;              // hombro → codo
+  const ANTEBRAZO = 0.265;             // codo → centro del guante
+  const LARGO_BRAZO = BRAZO_SUP + ANTEBRAZO;
+  const BRAZOS_ARRIBA = 2.95;          // ángulo de los brazos estirados para arriba
+  const ALTURA_MANOS = 0.36 + 0.48 + LARGO_BRAZO * Math.cos(PI - BRAZOS_ARRIBA);   // guantes con los brazos arriba
+  const santa = new THREE.Group();
+  const colgador = new THREE.Group();
+  colgador.position.y = ALTURA_MANOS;
+  const cuerpo = new THREE.Group();
+  cuerpo.position.y = -ALTURA_MANOS;
+  santa.add(colgador);
+  colgador.add(cuerpo);
+  escena.add(santa);
+
+  // Piernas (cortitas)
+  function pierna(lado) {
+    const g = new THREE.Group();
+    g.position.set(0.17 * lado, 0.36, 0);
+    g.rotation.z = 0.08 * lado;
+    const muslo = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.26, 16), rojoOscuro);
+    muslo.position.y = -0.13;
+    const bota = esfera(0.14, negro);
+    bota.scale.set(1, 0.65, 1.45);
+    bota.position.set(0, -0.28, 0.06);
+    g.add(muslo, bota);
+    cuerpo.add(g);
+    return g;
+  }
+  const piernaIzq = pierna(-1);
+  const piernaDer = pierna(1);
+
+  // Cadera: todo lo de arriba cuelga de acá
+  const cadera = new THREE.Group();
+  cadera.position.y = 0.36;
+  cuerpo.add(cadera);
+
+  // Panza
+  const panza = esfera(0.42, rojo, 32);
+  panza.scale.set(1.05, 0.95, 1);
+  panza.position.y = 0.3;
+  const ruedo = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.075, 12, 40), blanco);
+  ruedo.rotation.x = PI / 2;
+  ruedo.position.y = 0.04;
+  const cinturon = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.045, 10, 40), negro);
+  cinturon.rotation.x = PI / 2;
+  cinturon.position.y = 0.24;
+  const hebilla = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.12, 0.05), dorado);
+  hebilla.position.set(0, 0.24, 0.45);
+  const botones = [0.4, 0.52].map(y => {
+    const b = esfera(0.035, blanco, 12);
+    b.position.set(0, y, 0.4 - (y - 0.4) * 0.6);
+    return b;
+  });
+  const colita = esfera(0.09, blanco, 16);
+  colita.position.set(0, 0.12, -0.38);
+  cadera.add(panza, ruedo, cinturon, hebilla, colita, ...botones);
+
+  // Brazos con codo (hombro > brazo > codo > antebrazo, puño de piel y guante con pulgar)
+  function brazo(lado) {
+    const hombro = new THREE.Group();
+    hombro.position.set(0.33 * lado, 0.48, 0.1);
+    hombro.rotation.z = 0.25 * lado;
+    const bolaHombro = esfera(0.09, rojo, 16);
+    const brazoSup = new THREE.Mesh(new THREE.CylinderGeometry(0.088, 0.08, BRAZO_SUP, 14), rojo);
+    brazoSup.position.y = -BRAZO_SUP / 2;
+    const codo = new THREE.Group();
+    codo.position.y = -BRAZO_SUP;
+    const bolaCodo = esfera(0.08, rojo, 14);
+    const largoAnte = ANTEBRAZO - 0.08;
+    const antebrazo = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.074, largoAnte, 14), rojo);
+    antebrazo.position.y = -largoAnte / 2;
+    const puno = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.035, 8, 20), blanco);
+    puno.rotation.x = PI / 2;
+    puno.position.y = -ANTEBRAZO + 0.075;
+    const guante = esfera(0.1, verde, 16);
+    guante.position.y = -ANTEBRAZO;
+    const pulgar = esfera(0.042, verde, 12);
+    pulgar.position.set(-0.07 * lado, -ANTEBRAZO + 0.03, 0.05);
+    codo.add(bolaCodo, antebrazo, puno, guante, pulgar);
+    hombro.add(bolaHombro, brazoSup, codo);
+    cadera.add(hombro);
+    return { hombro, codo, lado };
+  }
+  const brazoIzq = brazo(-1);   // el de la izquierda de la pantalla
+  const brazoDer = brazo(1);    // el de la derecha de la pantalla
+
+  // Cabeza (bien grande, estilo chibi)
+  const cabeza = new THREE.Group();
+  cabeza.position.y = 0.72;
+  cadera.add(cabeza);
+
+  const cara = esfera(0.4, piel, 32);
+  cara.position.y = 0.32;
+  const barba = esfera(0.36, blanco, 28);
+  barba.scale.set(1.05, 0.85, 0.8);
+  barba.position.set(0, -0.02, 0.1);
+  const bigoteIzq = esfera(0.1, blanco, 16);
+  bigoteIzq.scale.set(1.5, 0.75, 0.9);
+  bigoteIzq.position.set(-0.1, 0.25, 0.37);
+  bigoteIzq.rotation.z = 0.35;
+  const bigoteDer = bigoteIzq.clone();
+  bigoteDer.position.x = 0.1;
+  bigoteDer.rotation.z = -0.35;
+  const nariz = esfera(0.065, naricita, 16);
+  nariz.position.set(0, 0.31, 0.41);
+  const mejillaIzq = esfera(0.07, rosa, 12);
+  mejillaIzq.scale.set(1, 0.6, 0.4);
+  mejillaIzq.position.set(-0.22, 0.32, 0.31);
+  const mejillaDer = mejillaIzq.clone();
+  mejillaDer.position.x = 0.22;
+
+  function ojo(x) {
+    const g = new THREE.Group();
+    g.position.set(x, 0.43, 0.35);
+    const o = esfera(0.055, negro, 16);
+    o.scale.set(0.85, 1.15, 0.6);
+    const brillo = esfera(0.018, blanco, 8);
+    brillo.position.set(0.018, 0.025, 0.03);
+    g.add(o, brillo);
+    return g;
+  }
+  const ojoIzq = ojo(-0.13);
+  const ojoDer = ojo(0.13);
+  const cejaIzq = esfera(0.05, blanco, 12);
+  cejaIzq.scale.set(1.3, 0.45, 0.5);
+  cejaIzq.rotation.z = 0.25;
+  cejaIzq.position.set(-0.13, 0.53, 0.34);
+  const cejaDer = cejaIzq.clone();
+  cejaDer.rotation.z = -0.25;
+  cejaDer.position.x = 0.13;
+  // Lengua (sale en la parte "¡qué locura!" del baile)
+  const lengua = esfera(0.065, mat(0xff6b81), 14);
+  lengua.position.set(0, 0.14, 0.36);
+  lengua.scale.setScalar(0.001);
+  cabeza.add(cara, barba, lengua, bigoteIzq, bigoteDer, nariz, mejillaIzq, mejillaDer, ojoIzq, ojoDer, cejaIzq, cejaDer);
+
+  // Gorro con punta que se bambolea
+  const gorro = new THREE.Group();
+  gorro.position.y = 0.55;
+  gorro.rotation.z = -0.12;
+  cabeza.add(gorro);
+  const banda = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.085, 12, 40), blanco);
+  banda.rotation.x = PI / 2;
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.37, 0.25, 28), rojo);
+  base.position.y = 0.12;
+  const punta = new THREE.Group();
+  punta.position.y = 0.24;
+  const cono = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.45, 24), rojo);
+  cono.position.y = 0.2;
+  const bolita = esfera(0.085, blanco, 16);
+  bolita.position.y = 0.44;
+  punta.add(cono, bolita);
+  gorro.add(banda, base, punta);
+
+  // Estrellitas de mareo (cuando la cabeza queda tirada en el piso)
+  const formaEstrella = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? 0.14 : 0.062;
+    const a = (i / 10) * PI * 2 - PI / 2;
+    if (i === 0) formaEstrella.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+    else formaEstrella.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  const geoEstrella = new THREE.ShapeGeometry(formaEstrella);
+  const estrellas = [0xffd23d, 0xfff3a0, 0xffb627].map(c => {
+    const e = new THREE.Mesh(geoEstrella, new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide, transparent: true }));
+    e.visible = false;
+    escena.add(e);
+    return e;
+  });
+
+  // ---------- Piezas que se desarman ----------
+  // Cada pieza tiene un "ancla": un punto invisible en su lugar de siempre,
+  // que es adonde vuelve volando cuando el Santa se rearma.
+  function ancla(padre, obj) {
+    const a = new THREE.Object3D();
+    a.position.copy(obj.position);
+    a.rotation.copy(obj.rotation);
+    padre.add(a);
+    return a;
+  }
+  const PIEZAS = [
+    { obj: piernaIzq, padre: cuerpo, radio: 0.16, centro: new THREE.Vector3(0, -0.17, 0.03), vel: [-1.5, 2.0, 0.5], demora: 0 },
+    { obj: piernaDer, padre: cuerpo, radio: 0.16, centro: new THREE.Vector3(0, -0.17, 0.03), vel: [1.6, 2.2, 0.4], demora: 0.04 },
+    { obj: brazoIzq.hombro, padre: cadera, radio: 0.12, centro: new THREE.Vector3(0, -0.25, 0), vel: [-2.2, 2.8, 0.4], demora: 0.12 },
+    { obj: brazoDer.hombro, padre: cadera, radio: 0.12, centro: new THREE.Vector3(0, -0.25, 0), vel: [2.2, 3.0, 0.3], demora: 0.16 },
+    { obj: cabeza, padre: cadera, radio: 0.4, centro: new THREE.Vector3(0, 0.3, 0), vel: [-0.7, 3.8, 0.4], demora: 0.26 },
+    { obj: gorro, padre: cabeza, radio: 0.24, centro: new THREE.Vector3(0, 0.22, 0), vel: [0.9, 4.6, 0.2], demora: 0.4 },
+  ];
+  PIEZAS.forEach(p => {
+    p.ancla = ancla(p.padre, p.obj);
+    p.v = new THREE.Vector3();
+    p.giro = new THREE.Vector3();
+    p.desde = new THREE.Vector3();
+    p.desdeQ = new THREE.Quaternion();
+  });
+
+  let estado = "armado";   // "armado" | "desarmado" | "rearmando"
+
+  function desarmar() {
+    escena.updateMatrixWorld(true);
+    // Primero el gorro (que está adentro de la cabeza), después el resto
+    [...PIEZAS].reverse().forEach(p => escena.attach(p.obj));
+    PIEZAS.forEach(p => {
+      const azar = () => (Math.random() - 0.5) * 0.6;
+      p.v.set(p.vel[0] + azar(), p.vel[1] + azar(), p.vel[2] + azar() * 0.5);
+      p.giro.set((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 16);
+      p.obj.scale.set(1, 1, 1);
+    });
+    estado = "desarmado";
+  }
+
+  const centroMundo = new THREE.Vector3();
+  function moverPiezas(dt, limiteX) {
+    const g = 14;
+    PIEZAS.forEach(p => {
+      p.v.y -= g * dt;
+      p.obj.position.addScaledVector(p.v, dt);
+      p.obj.rotation.x += p.giro.x * dt;
+      p.obj.rotation.y += p.giro.y * dt;
+      p.obj.rotation.z += p.giro.z * dt;
+      // Rebota en el piso (usando el centro real de la pieza)
+      p.obj.updateMatrixWorld();
+      centroMundo.copy(p.centro);
+      p.obj.localToWorld(centroMundo);
+      const hundido = pisoY + p.radio - centroMundo.y;
+      if (hundido > 0) {
+        p.obj.position.y += hundido;
+        if (p.v.y < 0) p.v.y = -p.v.y * 0.42;
+        p.v.x *= 0.72; p.v.z *= 0.72;
+        p.giro.multiplyScalar(0.65);
+      }
+      // No se va del lienzo
+      if (Math.abs(p.obj.position.x) > limiteX) {
+        p.obj.position.x = Math.sign(p.obj.position.x) * limiteX;
+        p.v.x *= -0.5;
+      }
+      if (Math.abs(p.obj.position.z) > 0.7) {
+        p.obj.position.z = Math.sign(p.obj.position.z) * 0.7;
+        p.v.z *= -0.5;
+      }
+    });
+  }
+
+  function empezarRearmado() {
+    PIEZAS.forEach(p => {
+      p.desde.copy(p.obj.position);
+      p.desdeQ.copy(p.obj.quaternion);
+    });
+    estado = "rearmando";
+  }
+
+  const destino = new THREE.Vector3();
+  const destinoQ = new THREE.Quaternion();
+  function rearmar(k) {
+    // k va de 0 a 1. Cada pieza sale con su demora: piernas, brazos, cabeza y al final el gorro.
+    santa.updateMatrixWorld(true);
+    PIEZAS.forEach(p => {
+      if (p.obj === gorro) cabeza.updateMatrixWorld(true);
+      const kk = suave(clamp01((k - p.demora) / 0.55));
+      p.ancla.getWorldPosition(destino);
+      p.ancla.getWorldQuaternion(destinoQ);
+      p.obj.position.lerpVectors(p.desde, destino, kk);
+      p.obj.position.y += Math.sin(kk * PI) * 0.7;          // vuelve en arco
+      p.obj.quaternion.copy(p.desdeQ).slerp(destinoQ, kk);
+    });
+  }
+
+  function terminarRearmado() {
+    // Vuelve cada pieza a su lugar exacto dentro del Santa
+    PIEZAS.forEach(p => {
+      p.padre.add(p.obj);
+      p.obj.position.copy(p.ancla.position);
+      p.obj.rotation.copy(p.ancla.rotation);
+      p.obj.scale.set(1, 1, 1);
+    });
+    estado = "armado";
+  }
+
+  // ---------- Medidas: dónde está el borde de la tarjeta y dónde el piso ----------
+  const v = new THREE.Vector3();
+  let altoCanvas = 410;
+  let anchoMundo = 6;
+  function filaAMundoY(fila) {
+    // Convierte una fila de píxeles del lienzo en altura del mundo 3D (en el plano del Santa)
+    v.set(0, 1 - (2 * fila) / altoCanvas, 0.5).unproject(camara);
+    v.sub(camara.position).normalize();
+    const t = -camara.position.z / v.z;
+    return camara.position.y + v.y * t;
+  }
+
+  function ajustar() {
+    const w = canvas.clientWidth || 360;
+    altoCanvas = canvas.clientHeight || 410;
+    renderer.setSize(w, altoCanvas, false);
+    camara.aspect = w / altoCanvas;
+    const distancia = altoCanvas / PIXELES_POR_UNIDAD / (2 * Math.tan((camara.fov * PI) / 360));
+    camara.position.set(0, 1, distancia);
+    camara.lookAt(0, 0.3, 0);
+    camara.updateProjectionMatrix();
+    camara.updateMatrixWorld();
+    anchoMundo = w / PIXELES_POR_UNIDAD;
+  }
+  ajustar();
+  window.addEventListener("resize", ajustar);
+
+  let pisoY = 0;
+  let bordeY = 3;
+  function medir() {
+    const rc = canvas.getBoundingClientRect();
+    const rt = tarjeta.getBoundingClientRect();
+    pisoY = filaAMundoY(altoCanvas - 26);
+    bordeY = filaAMundoY(rt.bottom - rc.top - 2);
+  }
+
+  // ---------- Línea de tiempo ----------
+  const reloj = new THREE.Clock();
+  const T = {
+    mira: 0, vuelta: 2.2, agacha: 2.6, salta: 2.95, agarra: 3.4, cuelga: 3.55,
+    resbala: 5.9, cae: 6.3, golpe: 6.75, rearma: 8.3, festeja: 9.5, baile: 10.0, fin: 21.25,   // el baile dura 11,25 s
+  };
+  const CICLO = T.fin;
+  // Con "?baile" en la dirección arranca directo bailando (para probar el baile)
+  let inicio = /[?&]baile\b/.test(location.search) ? -T.baile : 0;
+
+  // Tocalo: se desarma en el momento (y después se rearma, festeja y baila)
+  let yAlDesarmar = 0;     // altura que tenía cuando se desarmó (para que el cuerpo caiga desde ahí)
+  let giroAlDesarmar = 0;
+  contenedor.addEventListener("click", () => {
+    if (estado !== "armado") return;            // ya está en pedazos
+    const c = (reloj.getElapsedTime() - inicio) % CICLO;
+    if (c >= T.golpe && c < T.festeja) return;
+    inicio = reloj.getElapsedTime() - T.golpe;
+  });
+  let ultimaY = 0;
+
+  const clamp01 = x => Math.min(1, Math.max(0, x));
+  const salida = k => 1 - (1 - k) * (1 - k);     // rápido al principio, frena al final
+  const entrada = k => k * k;                     // arranca lento y acelera (caída)
+  const suave = k => k * k * (3 - 2 * k);         // suave al principio y al final
+  const lomo = (u, desde, dura, alto) => (u > desde && u < desde + dura ? Math.sin(((u - desde) / dura) * PI) * alto : 0);
+  const prog = (c, a, b) => clamp01((c - a) / (b - a));
+
+  const NEUTRO = {
+    giro: 0, tumbo: 0, colgZ: 0, colgX: 0, cX: 0, cY: 0, cZ: 0, hX: 0, hY: 0, hZ: 0,
+    aIX: 0, aIZ: -0.25, aDX: 0, aDZ: 0.25,
+    pIX: 0, pIZ: -0.08, pDX: 0, pDZ: 0.08,
+    ojos: 1, lengua: 0,
+  };
+  const actual = Object.assign({}, NEUTRO);
+  const TORSO_EN_EL_PISO = -0.27;   // altura del cuerpo sin piernas, apoyado en el piso
+
+  // =====================================================
+  // BAILE «AY QUÉ LOCURA»
+  // Coreografía sacada cuadro por cuadro del video de referencia (de 0:04 a 0:15),
+  // a un tiempo cada 0,5 s. Cada paso dice dónde van las manos (I = mano de la
+  // izquierda de la pantalla, D = mano de la derecha), cuánto se inclina/gira el
+  // torso (cX adelante, cY giro, cZ costado), la cabeza (hX asiente, hY gira,
+  // hZ ladea), los ojos (1 normal, <1 sonriendo, >1 abiertos) y la lengua.
+  // Las posiciones son relativas al torso del Santa (x costado, y altura, z adelante).
+  // =====================================================
+  const M = {
+    abajoI: [-0.44, 0.10, 0.12], abajoD: [0.44, 0.10, 0.12],
+    abajoAbiertoI: [-0.5, 0.12, 0.18], abajoAbiertoD: [0.5, 0.12, 0.18],
+    abajoJuntoI: [-0.40, 0.08, 0.06], abajoJuntoD: [0.40, 0.08, 0.06],
+    saludoD: [0.62, 0.80, 0.12], saludoAltoD: [0.56, 0.90, 0.22],
+    pancitaI: [-0.14, 0.22, 0.43], pancitaD: [0.14, 0.22, 0.43],
+    senalaPechoI: [-0.30, 0.45, 0.42], senalaCentroD: [0.06, 0.50, 0.44],
+    giraI: [0.0, 0.40, 0.42], giraI2: [0.0, 0.35, 0.42], giraD: [0.30, 0.38, 0.42], giraD2: [0.42, 0.30, 0.38],
+    palmaI: [-0.04, 0.50, 0.42], palmaD: [0.04, 0.50, 0.44],
+    abajoCruzadoD: [0.20, 0.18, 0.42], pulgarD: [0.12, 0.50, 0.44],
+    punoMentonI: [-0.08, 0.62, 0.42], punoArribaD: [0.48, 0.90, 0.15],
+    abiertoI: [-0.50, 0.55, 0.38], abiertoD: [0.50, 0.55, 0.38],
+    marcoI: [-0.28, 0.70, 0.36], marcoD: [0.30, 0.84, 0.30],
+    cruzI: [0.0, 0.62, 0.38], cruzD: [0.0, 0.66, 0.41],
+    cruzAltaI: [0.0, 0.80, 0.33], cruzAltaD: [0.0, 0.82, 0.36],
+    anchoI: [-0.70, 0.20, 0.10], anchoD: [0.70, 0.20, 0.10],
+    ancho2I: [-0.66, 0.16, 0.18], ancho2D: [0.66, 0.16, 0.18],
+    ancho3I: [-0.60, 0.14, 0.22], ancho3D: [0.60, 0.14, 0.22],
+    atrasI: [-0.48, 0.15, -0.15], cruzaD: [0.0, 0.42, 0.42],
+    balanceoI: [-0.50, 0.25, 0.25], cruzaD2: [0.0, 0.38, 0.42],
+    plegadoI: [0.0, 0.40, 0.43], plegadoD: [0.0, 0.47, 0.41],
+    pechoD: [0.10, 0.45, 0.42], sacudeD: [0.55, 0.75, 0.20],
+    garraI: [-0.66, 0.75, 0.20], garraD: [0.66, 0.75, 0.20],
+    garraAltaI: [-0.62, 0.82, 0.22], garraAltaD: [0.62, 0.82, 0.22],
+    punosPechoI: [-0.16, 0.50, 0.44], punosPechoD: [0.16, 0.50, 0.44],
+    cabezaI: [-0.46, 0.92, 0.10], cabezaD: [0.46, 0.92, 0.10],
+    mentonD: [0.06, 0.62, 0.42], corazonD: [0.05, 0.60, 0.42],
+    apuntaI: [-0.20, 0.55, 0.55], risaD: [0.06, 0.64, 0.42],
+  };
+
+  const COREO = [
+    // 0:04 entra con onda
+    { t: 0.00, I: M.abajoI, D: M.abajoD, hZ: 0.05 },
+    { t: 0.25, I: M.abajoI, D: M.abajoD, cZ: -0.06, hZ: -0.1 },
+    // 0:04.5 levanta la mano y saluda/abanica al costado de la cara
+    { t: 0.50, I: M.abajoI, D: M.saludoD, cZ: -0.1, hZ: -0.18, hY: -0.15, ojos: 0.75 },
+    { t: 0.75, I: M.abajoI, D: M.saludoAltoD, cX: -0.08, cZ: -0.12, hZ: -0.12, ojos: 0.75 },
+    // 0:05 manos abajo adelante, se inclina
+    { t: 1.00, I: M.pancitaI, D: M.pancitaD, cX: 0.15, hX: 0.12 },
+    // 0:05.25 señala con una mano, después con la otra a la cámara
+    { t: 1.25, I: M.senalaPechoI, D: M.abajoD, cY: -0.15, hY: -0.1 },
+    { t: 1.50, I: M.abajoI, D: M.senalaCentroD, cY: 0.1, cX: 0.1, hX: 0.05 },
+    // 0:05.75 enrolla las manos girando el torso
+    { t: 1.75, I: M.giraI, D: M.giraD, cY: 0.25, cZ: 0.06 },
+    { t: 2.00, I: M.giraI2, D: M.giraD2, cY: 0.3, cX: -0.08, hZ: 0.12, ojos: 0.75 },
+    // 0:06.25 aplauso
+    { t: 2.25, I: M.palmaI, D: M.palmaD, cY: 0.15, hX: -0.05 },
+    // 0:06.5 manotazo para abajo y "este" con el pulgar
+    { t: 2.50, I: M.abajoI, D: M.abajoCruzadoD, cX: 0.1 },
+    { t: 2.75, I: M.abajoI, D: M.pulgarD, hZ: 0.1 },
+    // 0:07 puño al mentón y el otro arriba
+    { t: 3.00, I: M.punoMentonI, D: M.punoArribaD, cY: -0.1, cX: 0.05, hY: -0.2, hZ: -0.08 },
+    // 0:07.25 palmas abiertas, 0:07.5 se encoge de hombros
+    { t: 3.25, I: M.abiertoI, D: M.abiertoD, hX: -0.05, ojos: 1.15 },
+    { t: 3.50, I: M.abajoAbiertoI, D: M.abajoAbiertoD, hX: 0.08 },
+    // 0:07.75 manos enmarcando la cara
+    { t: 3.75, I: M.marcoI, D: M.marcoD, hZ: 0.1, ojos: 0.75 },
+    // 0:08 cruza los brazos en X (abajo, arriba, abajo)
+    { t: 4.00, I: M.cruzI, D: M.cruzD, cX: 0.05 },
+    { t: 4.25, I: M.cruzAltaI, D: M.cruzAltaD, hX: 0.1 },
+    { t: 4.50, I: M.cruzI, D: M.cruzD, cX: 0.05 },
+    // 0:08.75 brazos pegados, 0:09 los abre bien abajo y menea los hombros
+    { t: 4.75, I: M.abajoJuntoI, D: M.abajoJuntoD },
+    { t: 5.00, I: M.anchoI, D: M.anchoD, hX: -0.1, ojos: 0.75 },
+    { t: 5.25, I: M.ancho2I, D: M.ancho2D, cZ: 0.06 },
+    { t: 5.50, I: M.ancho3I, D: M.ancho3D, cZ: -0.06 },
+    { t: 5.75, I: M.anchoI, D: M.anchoD, cZ: 0.1, hZ: 0.1 },
+    // 0:10 balancea los brazos cruzando el cuerpo y los pliega en el pecho
+    { t: 6.00, I: M.atrasI, D: M.cruzaD, cY: -0.35, hY: 0.25 },
+    { t: 6.25, I: M.balanceoI, D: M.cruzaD2, cY: -0.4, hY: 0.25 },
+    { t: 6.50, I: M.plegadoI, D: M.plegadoD, cY: -0.3, hZ: -0.1 },
+    { t: 6.75, I: M.abajoI, D: M.abajoCruzadoD, cY: -0.15 },
+    // 0:11 mano al pecho y sacudida al costado
+    { t: 7.00, I: M.abajoI, D: M.pechoD, cX: 0.05 },
+    { t: 7.25, I: M.abajoI, D: M.sacudeD, hZ: 0.08 },
+    // 0:11.5 «¡ay qué locura!»: manos en garra arriba, ojos grandes y lengua afuera
+    { t: 7.50, I: M.garraI, D: M.garraD, hX: -0.1, ojos: 1.35, lengua: 1 },
+    { t: 7.75, I: M.garraAltaI, D: M.garraAltaD, hX: 0.05, ojos: 1.35, lengua: 1 },
+    // 0:12 puños al pecho
+    { t: 8.00, I: M.punosPechoI, D: M.punosPechoD, cX: 0.08 },
+    // 0:12.25 manos a la cabeza y la sacude
+    { t: 8.25, I: M.cabezaI, D: M.cabezaD, hZ: 0.15, ojos: 0.5 },
+    { t: 8.50, I: M.cabezaI, D: M.cabezaD, hZ: -0.15, ojos: 0.3 },
+    { t: 8.75, I: M.cabezaI, D: M.cabezaD, hZ: 0.12, hX: 0.1, ojos: 0.3 },
+    // 0:13 mano en el mentón (pensando) y en el pecho
+    { t: 9.00, I: M.abajoI, D: M.mentonD, hZ: 0.1, hX: 0.05, ojos: 0.9 },
+    { t: 9.50, I: M.abajoI, D: M.corazonD, cY: 0.15 },
+    // 0:14 se acerca señalando a la cámara y se ríe
+    { t: 10.00, I: M.apuntaI, D: M.abajoD, cX: 0.18, hX: 0.1 },
+    { t: 10.50, I: M.abajoI, D: M.risaD, cX: 0.15, hX: 0.2, ojos: 0.4 },
+    { t: 11.00, I: M.abajoI, D: M.abajoD, cX: 0.05 },
+  ];
+  const DURACION_BAILE = 11.25;          // al final vuelve a la pose del principio: loop sin cortes
+  const TIEMPO = 0.5;                    // un tiempo de la música (s)
+  const ESCALARES = ["cX", "cY", "cZ", "hX", "hY", "hZ", "ojos", "lengua"];
+  const VALOR_BASE = { ojos: 1 };
+
+  // Interpolación suave (Hermite) entre pasos, con tangentes de los vecinos.
+  // El baile da la vuelta: después del último paso viene el primero.
+  function vecino(i) {
+    const n = COREO.length;
+    const vueltas = Math.floor(i / n);
+    const k = COREO[((i % n) + n) % n];
+    return { k, t: k.t + vueltas * DURACION_BAILE };
+  }
+  function valor(k, clave, eje) {
+    if (eje !== undefined) return k[clave][eje];
+    return k[clave] !== undefined ? k[clave] : (VALOR_BASE[clave] || 0);
+  }
+  function hermite(t, i, clave, eje) {
+    const a = vecino(i - 1), b = vecino(i), c = vecino(i + 1), d = vecino(i + 2);
+    const h = c.t - b.t;
+    const u = (t - b.t) / h;
+    const p1 = valor(b.k, clave, eje), p2 = valor(c.k, clave, eje);
+    const m1 = ((p2 - valor(a.k, clave, eje)) / (c.t - a.t)) * h * 0.85;
+    const m2 = ((valor(d.k, clave, eje) - p1) / (d.t - b.t)) * h * 0.85;
+    const u2 = u * u, u3 = u2 * u;
+    return (2 * u3 - 3 * u2 + 1) * p1 + (u3 - 2 * u2 + u) * m1 + (-2 * u3 + 3 * u2) * p2 + (u3 - u2) * m2;
+  }
+
+  const manoBaileI = new THREE.Vector3();
+  const manoBaileD = new THREE.Vector3();
+  function baileLocura(u, p) {
+    // u: segundos desde que empezó el baile
+    const t = ((u % DURACION_BAILE) + DURACION_BAILE) % DURACION_BAILE;
+    let i = 0;
+    while (i < COREO.length - 1 && COREO[i + 1].t <= t) i++;
+    for (let e = 0; e < 3; e++) {
+      manoBaileI.setComponent(e, hermite(t, i, "I", e));
+      manoBaileD.setComponent(e, hermite(t, i, "D", e));
+    }
+    ESCALARES.forEach(clave => { p[clave] = hermite(t, i, clave); });
+
+    // Onda de fondo al ritmo: rebote en cada tiempo, cadera que va y viene,
+    // hombros que tiemblan y pasitos en el lugar.
+    const fase = (t / TIEMPO) * PI;
+    const rebote = Math.abs(Math.sin(fase));
+    p.cZ += Math.sin(fase) * 0.05;
+    p.cY += Math.sin(fase * 2) * 0.04;
+    p.hX += rebote * 0.05;
+    p.pIX = -Math.max(0, Math.sin(fase)) * 0.28;
+    p.pDX = -Math.max(0, -Math.sin(fase)) * 0.28;
+    return { y: rebote * 0.05, aplaste: (1 - rebote) * 0.035 };
+  }
+
+  // ---------- Brazos: de "dónde quiero la mano" a ángulos de hombro y codo ----------
+  const ABAJO = new THREE.Vector3(0, -1, 0);
+  const _dir = new THREE.Vector3(), _perp = new THREE.Vector3(), _codo = new THREE.Vector3();
+  const _sup = new THREE.Vector3(), _inf = new THREE.Vector3(), _q = new THREE.Quaternion();
+  function moverBrazo(b, mano, pista) {
+    // Cinemática inversa de dos huesos, en el espacio del torso
+    const S = b.hombro.position;
+    _dir.subVectors(mano, S);
+    const d = Math.min(Math.max(_dir.length(), 0.08), LARGO_BRAZO - 0.0005);
+    _dir.normalize();
+    const cosA = Math.min(1, Math.max(-1, (BRAZO_SUP * BRAZO_SUP + d * d - ANTEBRAZO * ANTEBRAZO) / (2 * BRAZO_SUP * d)));
+    const a = Math.acos(cosA);
+    _perp.copy(pista).addScaledVector(_dir, -pista.dot(_dir));
+    if (_perp.lengthSq() < 1e-6) _perp.set(0, 0, -1);
+    _perp.normalize();
+    _codo.copy(S).addScaledVector(_dir, BRAZO_SUP * Math.cos(a)).addScaledVector(_perp, BRAZO_SUP * Math.sin(a));
+    _sup.subVectors(_codo, S).normalize();
+    b.hombro.quaternion.setFromUnitVectors(ABAJO, _sup);
+    _inf.copy(S).addScaledVector(_dir, d).sub(_codo).normalize();
+    _q.copy(b.hombro.quaternion).invert();
+    _inf.applyQuaternion(_q);
+    b.codo.quaternion.setFromUnitVectors(ABAJO, _inf.normalize());
+  }
+
+  // Mano según los ángulos de las partes "de escena" (brazo estirado)
+  const _euler = new THREE.Euler();
+  function manoPorAngulos(b, ax, az, out) {
+    _euler.set(ax, 0, az);
+    return out.set(0, -LARGO_BRAZO, 0).applyEuler(_euler).add(b.hombro.position);
+  }
+
+  // Hacia dónde apunta el codo: afuera y atrás; si la mano está alta, afuera y abajo
+  function pistaCodo(b, mano, out) {
+    const k = clamp01((mano.y - 0.5) / 0.3);
+    return out.set(b.lado, -0.45 - 0.45 * k, -0.4 + 0.3 * k);
+  }
+
+  function escenaEn(c, alturaColgado) {
+    // Devuelve la pose objetivo, la altura (y) y el aplastado para el momento c del ciclo
+    const p = Object.assign({}, NEUTRO);
+    let y = 0, aplaste = 0, rapido = false, baila = false;
+
+    if (c < T.vuelta) {
+      // Mira la tarjeta, respira y da saltitos de ganas
+      p.hX = -0.38;
+      aplaste = Math.sin(c * 4) * 0.015;
+      y = lomo(c, 1.1, 0.3, 0.07) + lomo(c, 1.45, 0.3, 0.07);
+      p.aIZ = -0.35; p.aDZ = 0.35;
+    } else if (c < T.agacha) {
+      // Se da vuelta para quedar de espaldas, mirando la tarjeta
+      p.giro = PI;
+      p.hX = -0.3;
+      y = lomo(c, T.vuelta, 0.3, 0.08);
+    } else if (c < T.salta) {
+      // Se agacha para tomar impulso
+      const k = salida(prog(c, T.agacha, T.salta));
+      p.giro = PI;
+      aplaste = 0.2 * k;
+      p.cX = 0.25; p.hX = -0.45;
+      p.aIX = 0.7; p.aDX = 0.7; p.aIZ = -0.4; p.aDZ = 0.4;
+      p.pIZ = -0.16; p.pDZ = 0.16;
+      rapido = true;
+    } else if (c < T.agarra) {
+      // ¡Salta de espaldas!
+      const k = prog(c, T.salta, T.agarra);
+      p.giro = PI;
+      y = alturaColgado * salida(k);
+      aplaste = -0.14 * (1 - k);
+      p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = 0.35; p.pDX = 0.2; p.hX = -0.3;
+      rapido = true;
+    } else if (c < T.cuelga) {
+      // Se agarra del borde con un tironcito
+      const k = prog(c, T.agarra, T.cuelga);
+      p.giro = PI;
+      y = alturaColgado - Math.sin(k * PI) * 0.06;
+      p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = -0.3; p.pDX = 0.3;
+      rapido = true;
+    } else if (c < T.resbala) {
+      // Colgado: patalea, se balancea e intenta subir dos veces
+      const u = c - T.cuelga;
+      p.giro = PI;
+      y = alturaColgado + lomo(u, 0.7, 0.55, 0.1) + lomo(u, 1.6, 0.55, 0.12);
+      p.colgZ = Math.sin(u * 3.2) * 0.1;
+      p.aIZ = -BRAZOS_ARRIBA; p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = Math.sin(u * 12) * 0.55; p.pDX = -Math.sin(u * 12) * 0.55;
+      p.pIZ = -0.12; p.pDZ = 0.12;
+      p.hX = -0.1;
+    } else if (c < T.cae) {
+      // Se le resbala una mano y manotea
+      const k = prog(c, T.resbala, T.cae);
+      p.giro = PI;
+      y = alturaColgado - 0.05 * k;
+      p.colgZ = -0.32 * salida(k) + Math.sin(c * 22) * 0.04;
+      p.aIZ = -1.4 + Math.sin(c * 30) * 0.5; p.aIX = Math.sin(c * 26) * 0.4;
+      p.aDZ = BRAZOS_ARRIBA;
+      p.pIX = Math.sin(c * 18) * 0.7; p.pDX = -Math.sin(c * 18) * 0.7;
+      p.ojos = 1.35;
+      rapido = true;
+    } else if (c < T.golpe) {
+      // Se cae
+      const k = prog(c, T.cae, T.golpe);
+      p.giro = PI + k * 0.6;
+      y = (alturaColgado - 0.05) * (1 - entrada(k));
+      p.aIZ = -2.4 + Math.sin(c * 25) * 0.45; p.aDZ = 2.4 + Math.sin(c * 25 + 1.3) * 0.45;
+      p.pIX = -0.6; p.pDX = 0.4;
+      p.ojos = 1.4;
+      rapido = true;
+    } else if (c < T.rearma) {
+      // ¡Pum! Se desarmó: el cuerpo cae (desde donde estaba) y queda en el piso, medio de costado
+      const u = c - T.golpe;
+      p.giro = giroAlDesarmar;
+      p.tumbo = 0.35;
+      const g = 14;
+      const caida = yAlDesarmar - 0.5 * g * u * u;
+      const tPiso = Math.sqrt(Math.max(0, 2 * (yAlDesarmar - TORSO_EN_EL_PISO) / g));
+      if (caida > TORSO_EN_EL_PISO) {
+        y = caida;
+      } else {
+        const v = u - tPiso;
+        y = TORSO_EN_EL_PISO + Math.max(0, Math.sin(Math.min(v / 0.35, 1) * PI)) * 0.2 * Math.max(0, 1 - v / 0.35);
+        aplaste = Math.max(0, 0.18 * (1 - v / 0.25));
+      }
+      rapido = true;
+    } else if (c < T.festeja) {
+      // Las piezas vuelven volando; el cuerpo se endereza y mira para adelante
+      const k = prog(c, T.rearma, T.festeja);
+      p.giro = 0;
+      y = TORSO_EN_EL_PISO * (1 - suave(clamp01(k / 0.45)));
+      p.ojos = 1.2;
+    } else if (c < T.baile) {
+      // ¡Ta-dá!
+      const k = prog(c, T.festeja, T.baile);
+      y = lomo(k, 0, 1, 0.22);
+      p.aIZ = -2.5; p.aDZ = 2.5;
+      p.hX = -0.15;
+      aplaste = k > 0.9 ? 0.06 : 0;
+      p.ojos = 1.1;
+    } else {
+      // Baile «Ay qué locura»
+      const r = baileLocura(c - T.baile, p);
+      y = r.y;
+      aplaste = r.aplaste;
+      rapido = true;
+      baila = true;
+    }
+    return { p, y, aplaste, rapido, baila };
+  }
+
+  // ---------- Animar ----------
+  let cAnterior = 0;
+  let pesoBaile = 0;
+  const manoI = new THREE.Vector3(), manoD = new THREE.Vector3();
+  const pistaI = new THREE.Vector3(), pistaD = new THREE.Vector3();
+  function animar(t, dt) {
+    medir();
+    const alturaColgado = bordeY - 0.03 - ALTURA_MANOS - pisoY;   // cuánto sube hasta agarrarse
+
+    // Si la tarjeta muestra el resultado del sorteo, no se cuelga para no taparlo: baila.
+    let c = (t - inicio) % CICLO;
+    if (c >= T.vuelta && cAnterior < T.vuelta && ruleta && ruleta.classList.contains("ganador")) {
+      inicio = t - T.baile;
+      c = T.baile;
+    }
+
+    // Eventos: desarmarse al tocar el piso, rearmarse después
+    const enPiezas = c >= T.golpe && c < T.festeja;
+    if (enPiezas && estado === "armado" && c < T.rearma) {
+      yAlDesarmar = Math.max(ultimaY, TORSO_EN_EL_PISO);
+      giroAlDesarmar = actual.giro;
+      desarmar();
+    }
+    if (estado === "desarmado" && c >= T.rearma && c < T.festeja) empezarRearmado();
+    if (!enPiezas && estado !== "armado") terminarRearmado();
+    cAnterior = c;
+
+    const { p: objetivo, y, aplaste, rapido, baila } = escenaEn(c, alturaColgado);
+    ultimaY = y;
+
+    // Pasar suave a la pose (más rápido en los momentos bruscos)
+    const k = dt === 0 ? 1 : 1 - Math.exp(-dt * (rapido ? 24 : 11));
+    for (const clave in objetivo) actual[clave] += (objetivo[clave] - actual[clave]) * k;
+    const p = actual;
+    // Entrada y salida suave del baile
+    pesoBaile += ((baila ? 1 : 0) - pesoBaile) * (dt === 0 ? 1 : 1 - Math.exp(-dt * 7));
+
+    santa.position.set(0, pisoY + y, 0);
+    santa.rotation.set(0, p.giro, p.tumbo);
+    colgador.rotation.set(p.colgX, 0, p.colgZ);
+    cuerpo.scale.set(1 + aplaste * 0.6, 1 - aplaste, 1 + aplaste * 0.6);
+    cadera.rotation.set(p.cX, p.cY, p.cZ);
+    const l = Math.max(0.001, p.lengua);
+    lengua.scale.set(0.9 * l, 0.6 * l, 1.1 * l);
+
+    if (estado === "armado") {
+      cabeza.rotation.set(p.hX, p.hY, p.hZ);
+      // Brazos: mezcla entre la pose "de escena" y la del baile, y de ahí hombro + codo
+      manoPorAngulos(brazoIzq, p.aIX, p.aIZ, manoI);
+      manoPorAngulos(brazoDer, p.aDX, p.aDZ, manoD);
+      if (pesoBaile > 0.001) {
+        manoI.lerp(manoBaileI, pesoBaile);
+        manoD.lerp(manoBaileD, pesoBaile);
+      }
+      moverBrazo(brazoIzq, manoI, pistaCodo(brazoIzq, manoI, pistaI));
+      moverBrazo(brazoDer, manoD, pistaCodo(brazoDer, manoD, pistaD));
+      piernaIzq.rotation.set(p.pIX, 0, p.pIZ);
+      piernaDer.rotation.set(p.pDX, 0, p.pDZ);
+      gorro.rotation.set(0, 0, -0.12);
+    } else if (estado === "desarmado") {
+      moverPiezas(dt, anchoMundo / 2 - 0.35);
+    } else {
+      rearmar(prog(c, T.rearma, T.festeja));
+    }
+
+    // Ojos: parpadeo y ojos grandes del susto
+    const parpadeo = (t % 3.2) < 0.12 ? 0.15 : 1;
+    [ojoIzq, ojoDer].forEach(o => o.scale.set(p.ojos, p.ojos * parpadeo, p.ojos));
+
+    // Punta del gorro
+    punta.rotation.z = Math.sin(t * 3) * 0.25 - 0.3;
+    punta.rotation.x = Math.cos(t * 3) * 0.12;
+
+    // Estrellitas girando sobre la cabeza tirada en el piso
+    const mostrarEstrellas = estado === "desarmado" && c > T.golpe + 0.5;
+    if (mostrarEstrellas) {
+      cabeza.updateMatrixWorld(true);
+      v.set(0, 0.3, 0);
+      cabeza.localToWorld(v);
+    }
+    estrellas.forEach((e, i) => {
+      e.visible = mostrarEstrellas;
+      if (!mostrarEstrellas) return;
+      const a = t * 4 + (i * PI * 2) / estrellas.length;
+      e.position.set(v.x + Math.cos(a) * 0.5, v.y + 0.55 + Math.sin(a * 2) * 0.05, v.z + Math.sin(a) * 0.35);
+      e.lookAt(camara.position);
+      e.rotation.z += t * 3;
+    });
+
+    // Sombra en el piso: más chica y suave cuanto más alto está
+    sombra.position.set(santa.position.x, pisoY + 0.002, 0);
+    const alto = Math.max(0, y);
+    const s = Math.max(0.25, 1 - alto * 0.35);
+    sombra.scale.set(s, s, s);
+    sombra.material.opacity = Math.max(0.25, 1 - alto * 0.3);
+  }
+
+  // ---------- Bucle (solo cuando se ve) ----------
+  let visible = true;
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(entradas => { visible = entradas[0].isIntersecting; }).observe(contenedor);
+  }
+
+  let anterior = 0;
+  function cuadro() {
+    requestAnimationFrame(cuadro);
+    if (!visible || document.hidden) return;
+    const t = reloj.getElapsedTime();
+    const dt = Math.min(Math.max(t - anterior, 0), 0.05);
+    anterior = t;
+    animar(t, dt);
+    renderer.render(escena, camara);
+  }
+
+  if (quieto) {
+    animar(0.5, 0);
+    renderer.render(escena, camara);
+  } else {
+    cuadro();
+  }
+})();
+</script>
+</body>
+</html>
