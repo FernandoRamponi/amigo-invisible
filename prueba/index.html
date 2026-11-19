@@ -791,7 +791,7 @@ iniciar();
 //   mira la tarjeta → se da vuelta → salta de espaldas y se cuelga del borde →
 //   patalea → se resbala y se cae → al chocar el piso SE DESARMA en piezas →
 //   las piezas vuelven volando y se REARMA → festeja → baila «AY QUÉ LOCURA» → y vuelta a empezar.
-// Tocalo mientras mira la tarjeta para que salte enseguida.
+// Tocalo y se desarma en el momento (después se rearma, festeja y baila).
 // Si la tarjeta muestra el resultado del sorteo, no se cuelga para no taparlo:
 // directamente baila.
 // Si el navegador no soporta 3D, queda el Santa plano (SVG) de respaldo.
@@ -1192,11 +1192,16 @@ iniciar();
   // Con "?baile" en la dirección arranca directo bailando (para probar el baile)
   let inicio = /[?&]baile\b/.test(location.search) ? -T.baile : 0;
 
-  // Tocalo: si está mirando la tarjeta, salta ya
+  // Tocalo: se desarma en el momento (y después se rearma, festeja y baila)
+  let yAlDesarmar = 0;     // altura que tenía cuando se desarmó (para que el cuerpo caiga desde ahí)
+  let giroAlDesarmar = 0;
   contenedor.addEventListener("click", () => {
+    if (estado !== "armado") return;            // ya está en pedazos
     const c = (reloj.getElapsedTime() - inicio) % CICLO;
-    if (c < T.vuelta) inicio = reloj.getElapsedTime() - T.vuelta;
+    if (c >= T.golpe && c < T.festeja) return;
+    inicio = reloj.getElapsedTime() - T.golpe;
   });
+  let ultimaY = 0;
 
   const clamp01 = x => Math.min(1, Math.max(0, x));
   const salida = k => 1 - (1 - k) * (1 - k);     // rápido al principio, frena al final
@@ -1478,12 +1483,20 @@ iniciar();
       p.ojos = 1.4;
       rapido = true;
     } else if (c < T.rearma) {
-      // ¡Pum! Se desarmó: el cuerpo queda en el piso, medio de costado
+      // ¡Pum! Se desarmó: el cuerpo cae (desde donde estaba) y queda en el piso, medio de costado
       const u = c - T.golpe;
-      p.giro = PI + 0.6;
+      p.giro = giroAlDesarmar;
       p.tumbo = 0.35;
-      y = TORSO_EN_EL_PISO + Math.max(0, Math.sin(Math.min(u / 0.35, 1) * PI)) * 0.25 * Math.max(0, 1 - u / 0.35);
-      aplaste = Math.max(0, 0.18 * (1 - u / 0.25));
+      const g = 14;
+      const caida = yAlDesarmar - 0.5 * g * u * u;
+      const tPiso = Math.sqrt(Math.max(0, 2 * (yAlDesarmar - TORSO_EN_EL_PISO) / g));
+      if (caida > TORSO_EN_EL_PISO) {
+        y = caida;
+      } else {
+        const v = u - tPiso;
+        y = TORSO_EN_EL_PISO + Math.max(0, Math.sin(Math.min(v / 0.35, 1) * PI)) * 0.2 * Math.max(0, 1 - v / 0.35);
+        aplaste = Math.max(0, 0.18 * (1 - v / 0.25));
+      }
       rapido = true;
     } else if (c < T.festeja) {
       // Las piezas vuelven volando; el cuerpo se endereza y mira para adelante
@@ -1528,12 +1541,17 @@ iniciar();
 
     // Eventos: desarmarse al tocar el piso, rearmarse después
     const enPiezas = c >= T.golpe && c < T.festeja;
-    if (enPiezas && estado === "armado" && c < T.rearma) desarmar();
+    if (enPiezas && estado === "armado" && c < T.rearma) {
+      yAlDesarmar = Math.max(ultimaY, TORSO_EN_EL_PISO);
+      giroAlDesarmar = actual.giro;
+      desarmar();
+    }
     if (estado === "desarmado" && c >= T.rearma && c < T.festeja) empezarRearmado();
     if (!enPiezas && estado !== "armado") terminarRearmado();
     cAnterior = c;
 
     const { p: objetivo, y, aplaste, rapido, baila } = escenaEn(c, alturaColgado);
+    ultimaY = y;
 
     // Pasar suave a la pose (más rápido en los momentos bruscos)
     const k = dt === 0 ? 1 : 1 - Math.exp(-dt * (rapido ? 24 : 11));
